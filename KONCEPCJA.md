@@ -9,7 +9,7 @@
 
 Budujemy **mobilną aplikację webową (PWA)** towarzyszącą zjazdowi 10-lecia klubu darta. Uczestnicy wchodzą do niej przez **kod QR** (bez logowania i rejestracji), podają raz pseudonim (zapisany lokalnie) i mają pod ręką:
 
-- **stronę główną** z licznikiem do zjazdu i licznikiem uczestników,
+- **stronę główną** z **bramką wejścia (pseudonim + hasło zjazdu)**, licznikiem do zjazdu i licznikiem uczestników,
 - **interaktywną historię klubu** (oś czasu 2015→2025, statystyki, cytaty),
 - **galerię zdjęć** (archiwalne + dodawanie nowych z telefonu, z kompresją; zdjęcia widoczne od razu i porządkowane w folderach przez organizatora),
 - **mini gry** (quiz, wirtualna lotka, memory, bingo klubowe),
@@ -257,13 +257,15 @@ Każdy uczestnik dodaje **jedno prawdziwe, nieoczywiste/zabawne zdanie** o sobie
 ### A. Repozytorium i kod
 1. Zainstaluj Node 18+ i Git. Skopiuj folder `darts10/` do nowego repo: `git init && git add . && git commit`.
 2. `npm install` i `npm run dev` — sprawdź lokalnie.
-3. Edytuj `src/config.js`: nazwa klubu, data/miejsce zjazdu, `adminKey` (długi, losowy ciąg).
-4. Zastąp przykładowe treści w `src/data/*.js` (historia, quiz) i zdjęcia w `public/photos/` (albo wgraj własne archiwum — patrz też „Edycja treści").
+3. **Ustaw hasła i sekrety** (nie w config.js!): skopiuj `.env.example` → `.env` i wpisz `VITE_APP_PASSWORD` (hasło wejścia dla uczestników) oraz `VITE_ADMIN_KEY` (klucz panelu admina). Plik `.env` jest w `.gitignore`.
+4. Edytuj `src/config.js`: nazwa klubu, data/miejsce zjazdu, nazwa folderu jubileuszowego.
+5. Zastąp przykładowe treści w `src/data/*.js` (historia, quiz) i zdjęcia w `public/photos/` (albo wgraj własne archiwum — patrz też „Edycja treści").
 
 ### B. GitHub Pages
-5. Załóż publiczne repo np. `darts10` (GitHub). Wypchnij kod: `git remote add origin … && git push -u origin main`.
-6. Repo → Settings → Pages → Source: **GitHub Actions** (workflow `.github/workflows/deploy.yml` jest już w repo — build+deploy po każdym pushu do `main`).
-7. Poczekaj na zielony workflow (Actions), otwórz `https://TWOJ-NICK.github.io/darts10/`. ✅
+6. Załóż publiczne repo np. `darts10` (GitHub). Wypchnij kod: `git remote add origin … && git push -u origin main`.
+7. Repo → Settings → Pages → Source: **GitHub Actions** (workflow `.github/workflows/deploy.yml` jest już w repo — build+deploy po każdym pushu do `main`).
+8. **Ustaw sekrety w GitHub**: repo → Settings → Secrets and variables → Actions → New repository secret: `VITE_APP_PASSWORD`, `VITE_ADMIN_KEY` (oraz `VITE_FIREBASE_*`, jeśli używasz Firebase). Workflow wstrzyknie je do buildu.
+9. Poczekaj na zielony workflow (Actions), otwórz `https://TWOJ-NICK.github.io/darts10/`. ✅
 
 ### C. Firebase (tryb produkcyjny — tylko jeśli chcesz wspólnych danych)
 8. Załóż konto Google → console.firebase.google.com → **Dodaj projekt** (bez Analytics).
@@ -292,6 +294,7 @@ Każdy uczestnik dodaje **jedno prawdziwe, nieoczywiste/zabawne zdanie** o sobie
 | Przekroczenie darmowych limitów Firestore (50 tys. odczytów/dzień) | niskie (100–200 osób × kilkanaście odczytów) | kompresja zdjęć, limit 500 dokumentów na zapytanie, brak realtime |
 | Słabe/częściowe Wi-Fi na sali | średnie | PWA offline (cache), małe pliki (75 kB app + skompresowane zdjęcia), lazy loading |
 | Spam / nieodpowiednie treści | niskie–średnie | honeypot, moderacja, limit 1 zdanie/urządzenie |
+| Hasło wejścia „w kliencie" (możliwe do odczytania z kodu strony) | niskie | akceptowalna miękka ochrona na 1-dniowe wydarzenie; hasła trzymane w `.env`/sekrety GitHub, nie w repo; pełne zabezpieczenie = backend (poza budżetem 0 zł) |
 | Admin nie nadąża z moderacją | średnie | panel na telefonie, szybkie zatwierdzanie jednym tapem |
 | Utrata danych w trybie demo (czyszczenie localStorage) | niskie | tryb demo to tylko wersja testowa; na event Firebase |
 | iOS: problem z wyborem pliku/przetwarzaniem zdjęcia | niskie | `accept="image/*"`, dwa przyciski (aparat/galeria), kompresja canvas |
@@ -381,8 +384,9 @@ const [deck] = useState(() => {
 
 ## Załącznik A. Bezpieczeństwo i prywatność (streszczenie)
 
-- Aplikacja **nie zbiera danych wrażliwych**: pseudonim (lokalnie), zdjęcia (publiczne, moderowane), zdania (moderowane), wyniki gier.
-- Reguły Firestore: odczyt publiczny tylko zatwierdzonych treści; tworzenie z walidacją pól; zmiany/usuwanie tylko z kluczem admina (jawny w regułach — kompromis opisany w rozdz. 9).
+- Aplikacja **nie zbiera danych wrażliwych**: pseudonim (lokalnie), zdjęcia (publiczne), zdania (moderowane), wyniki gier.
+- **Hasła nie są w repo**: hasło wejścia uczestników (`VITE_APP_PASSWORD`) i klucz admina (`VITE_ADMIN_KEY`) pochodzą z `.env` (gitignored) lub sekretów GitHub Actions. W `src/config.js` są tylko wartości demo-awaryjne.
+- Reguły Firestore: odczyt publiczny treści; tworzenie z walidacją pól; zmiany/usuwanie tylko z kluczem admina (jawny w regułach — kompromis opisany w rozdz. 9).
 - Reguły Storage: tylko `image/jpeg`, ≤ 5 MB; odczyt publiczny; admin po nagłówku `x-admin-key`.
 - Anti-spam: honeypot, limity długości, 1 zdanie/urządzenie, moderacja.
 - **Prywatność danych: 5 GB Storage to „wspólne archiwum klubu"** — po zjeździe można je pobrać i np. usunąć projekt (instrukcja w CHECKLISTA.md).

@@ -20,8 +20,8 @@ let ready = false
 async function ensure() {
   if (ready) return
   const cfg = (await import('../firebase-config.js')).default
-  if (!cfg || !cfg.apiKey || cfg.apiKey.startsWith('TU-WKLEJ')) {
-    throw new Error('Brak konfiguracji Firebase — wypełnij src/firebase-config.js')
+  if (!cfg || !cfg.apiKey || cfg.apiKey === 'PLACEHOLDER' || cfg.apiKey.startsWith('TU-WKLEJ')) {
+    throw new Error('Brak konfiguracji Firebase — wypełnij .env (VITE_FIREBASE_*) i ustaw storageMode=firebase')
   }
   const fb = await import('firebase/app')
   const fs = await import('firebase/firestore')
@@ -49,6 +49,13 @@ export const firebaseStore = {
     const n = String(name || '').trim().slice(0, 30)
     if (n) localStorage.setItem('d10.nickname', n)
     return n
+  },
+
+  async getEntered() {
+    try { return localStorage.getItem('d10.entered') === '1' } catch { return false }
+  },
+  async setEntered() {
+    try { localStorage.setItem('d10.entered', '1') } catch { /* ignore */ }
   },
 
   async registerParticipant() {

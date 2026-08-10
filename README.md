@@ -6,12 +6,12 @@ Pełna dokumentacja projektowa: **[KONCEPCJA.md](KONCEPCJA.md)** • Checklista 
 
 ## Funkcje
 
-- 🏠 Strona główna: logo klubu, licznik do zjazdu, licznik uczestników, onboarding pseudonimu
+- 🏠 Strona główna: **bramka wejścia (pseudonim + hasło zjazdu)**, logo klubu, licznik do zjazdu, licznik uczestników
 - 🗓️ Interaktywna historia klubu (oś czasu, statystyki, cytaty — treści w `src/data/`)
 - 📸 Galeria: przeglądanie, filtry wg folderów, lightbox, **dodawanie zdjęć z aparatu/galerii** (kompresja; zdjęcia widoczne od razu, trafiają do folderu „X-lecie PeKaeS")
-- 🎯 Mini gry: quiz, **Lotka 501 (double out z animacją lecącej lotki)**, **Zgadnij rok**, memory, bingo klubowe
+- 🎯 Mini gry: quiz, **Lotka 501 (double out z animacją lecącej lotki i licznikiem rzutów)**, **Zgadnij rok**, memory, bingo klubowe
 - 🎭 „Kto to powiedział?" — zbiórka zdań → moderacja → rozgrywka → ranking
-- 🔐 Panel organizatora (`#/admin` + klucz): zarządzanie zdjęciami (foldery, rok, usuwanie — także zbiorczo), moderacja zdań, sterowanie grą, backup JSON
+- 🔐 Panel organizatora (`#/admin` + klucz): zarządzanie zdjęciami (foldery — **w tym nowe foldery z własną nazwą** — rok, usuwanie, także zbiorczo), moderacja zdań, sterowanie grą, backup JSON
 - 🏆 Konfetti i rekordy w każdej grze
 - 📱 PWA: działa offline, „dodaj do ekranu głównego"
 
@@ -26,7 +26,7 @@ Domyślnie dane trzymane są w **localStorage** (`storageMode: 'local'`) — wsz
 
 ```bash
 npm install        # już masz
-# 1) wypełnij src/firebase-config.js danymi z konsoli Firebase
+# 1) skopiuj .env.example → .env i wklej dane Firebase + ustaw hasła
 # 2) w src/config.js ustaw FEATURES.storageMode = 'firebase'
 # 3) wgraj reguły z firebase/ (zmień sekret admina!)
 npm run build
@@ -36,8 +36,9 @@ npm run build
 
 1. Załóż publiczne repo i wypchnij kod (`git push` na gałąź `main`).
 2. Repo → **Settings → Pages → Source: GitHub Actions**.
-3. Workflow `.github/workflows/deploy.yml` sam zbuduje i wdroży aplikację.
-4. Otwórz `https://TWOJ-NICK.github.io/darts10/`.
+3. Repo → **Settings → Secrets and variables → Actions** → dodaj sekrety (patrz niżej).
+4. Workflow `.github/workflows/deploy.yml` sam zbuduje i wdroży aplikację.
+5. Otwórz `https://TWOJ-NICK.github.io/darts10/`.
 
 ## QR kod
 
@@ -45,11 +46,31 @@ npm run build
 npm run qr -- "https://TWOJ-NICK.github.io/darts10/"   # → qr-zjazd.png
 ```
 
+## 🔐 Hasła i sekrety (WAŻNE — żeby nie trafiły do GitHub)
+
+W aplikacji są **trzy rodzaje haseł/kluczy**: hasło wejścia dla uczestników, klucz panelu admina i klucze Firebase. **Żadne z nich nie jest zapisane w repo** — pochodzą ze zmiennych środowiskowych:
+
+| Zmienna | Co robi | Gdzie ustawić |
+|---|---|---|
+| `VITE_APP_PASSWORD` | hasło wejścia do aplikacji (uczestnicy) | lokalnie: `.env` • GitHub: secret `VITE_APP_PASSWORD` |
+| `VITE_ADMIN_KEY` | klucz panelu organizatora (`#/admin`) | lokalnie: `.env` • GitHub: secret `VITE_ADMIN_KEY` |
+| `VITE_FIREBASE_*` | dane projektu Firebase (jeśli używasz) | lokalnie: `.env` • GitHub: sekrety `VITE_FIREBASE_*` |
+
+**Jak to działa:**
+1. **Lokalnie:** skopiuj `.env.example` → `.env`, wpisz hasła (np. `VITE_APP_PASSWORD=pekaes2026`). Plik `.env` jest w `.gitignore` — nie zostanie wypchnięty.
+2. **Na GitHub:** ustaw te same wartości jako **sekrety** (repo → Settings → Secrets and variables → Actions → New repository secret). Workflow `deploy.yml` wstrzyknie je do buildu jako zmienne `VITE_*`.
+3. Jeśli sekretu nie ustawisz, aplikacja użyje **domyślnych haseł demo** (`dart10` i `dart10-admin`) i pokaże ostrzeżenie w konsoli. **Przed zjazdem ustaw prawdziwe hasła!**
+
+> ⚠️ **Uczciwa uwaga:** aplikacja jest statyczna (GitHub Pages), więc sprawdzenie hasła odbywa się po stronie przeglądarki — ktoś bardzo zdeterminowany mógłby odczytać hasło z kodu strony. Dla jednodniowej imprezy klubowej to akceptowalna „miękka" ochrona (blokuje przypadkowych ciekawskich). Pełne bezpieczeństwo wymagałoby backendu — to już nie mieści się w budżecie 0 zł.
+> Klucze API Firebase **nie są tajne** (bezpieczeństwo zapewniają reguły w `firebase/*.rules`), ale trzymamy je w sekretach, żeby nie zaśmiecać repo.
+
 ## Konfiguracja (minimalna przed eventem)
 
 | Co | Gdzie |
 |---|---|
-| Nazwa klubu, data/miejsce zjazdu, klucz admina | `src/config.js` |
+| Nazwa klubu, data/miejsce zjazdu, nazwa folderu jubileuszowego | `src/config.js` (sekcja `CLUB`) |
+| **Hasło wejścia dla uczestników** | `.env` → `VITE_APP_PASSWORD` (secret w GitHub) |
+| **Klucz panelu admina** | `.env` → `VITE_ADMIN_KEY` (secret w GitHub) |
 | Historia, quiz, bingo | `src/data/*.js` |
 | Zdjęcia archiwalne | `public/photos/photo-1..4.jpg` |
 
@@ -66,7 +87,7 @@ src/
 
 ## Testy
 
-Prototyp przeszedł automatyczny test przeglądarkowy (Playwright, Chromium): wszystkie podstrony, onboarding, dodawanie zdań/zatwierdzanie/gra, quiz, lotka, memory, bingo, ranking — **bez błędów konsoli**. Test punktacji tarczy: 11/11 przypadków zgodnych z prawdziwą geometrią.
+Prototyp przeszedł automatyczny test przeglądarkowy (Playwright, Chromium): bramka wejścia (błędne hasło odrzucone), wszystkie podstrony, dodawanie zdań/zatwierdzanie/gra, quiz, lotka 501, zgadnij rok, memory, bingo, nowe foldery w panelu admina, ranking — **bez błędów konsoli**. Test punktacji tarczy: 11/11 przypadków zgodnych z prawdziwą geometrią.
 
 ## 🛠️ Gdzie zmienić treści aplikacji
 
@@ -84,7 +105,8 @@ Wszystkie treści (oprócz kodu gier) edytujesz w kilku plikach — bez programo
 | Miejsce zjazdu | `CLUB.eventPlace` |
 | Etykieta wydarzenia („Zjazd 10-lecia") | `CLUB.eventLabel` |
 | **Nazwa folderu na zdjęcia z zjazdu** | `CLUB.jubileeFolder` (domyślnie „X-lecie PeKaeS") |
-| **Klucz panelu organizatora** | `FEATURES.adminKey` (ZMIEŃ na własny, długi ciąg!) |
+| **Hasło wejścia dla uczestników** | `.env` → `VITE_APP_PASSWORD` (nie w config.js!) |
+| **Klucz panelu organizatora** | `.env` → `VITE_ADMIN_KEY` (nie w config.js!) |
 | Min. liczba zdań do startu gry „Kto to powiedział?" | `FEATURES.minSentencesToStart` |
 | Maks. długość zdania w grze | `FEATURES.maxSentenceLen` |
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Dartboard from '../components/Dartboard.jsx'
 import { recordGame, bestFor } from '../lib/store.js'
 import { store } from '../lib/store.js'
@@ -17,8 +17,8 @@ function checkoutHint(score) {
 /**
  * LOTKA 501 (double out).
  * Zaczynasz z 501 punktów, 3 lotki w turze. Gra kończy się trafieniem w pole
- * podwójne (lub bull = 50) przy zejściu dokładnie do 0. Przekroczenie 0 / zejście
- * do 1 / do 0 bez podwójnej = "bust" — tura przepada, wynik wraca.
+ * podwójne (lub bull = 50) przy zejściu dokładnie do 0.
+ * LICZBA RZUTÓW = liczba kliknięć potrzebna do wygrania (mniej = lepiej w rankingu).
  */
 export default function GameLotka501() {
   const myName = store.getNickname()
@@ -29,11 +29,14 @@ export default function GameLotka501() {
   const [last, setLast] = useState(null)
   const [status, setStatus] = useState('playing') // playing | won | ended
   const [msg, setMsg] = useState('')
-  const [totalDarts, setTotalDarts] = useState(0)
+  const [totalDarts, setTotalDarts] = useState(0)  // do wyświetlenia po wygranej
   const [turnNo, setTurnNo] = useState(1)
   const [best, setBest] = useState(null)
   const [isRecord, setIsRecord] = useState(false)
   const [startTs] = useState(() => Date.now())
+
+  // LICZNIK RZUTÓW: ref, żeby wartość była aktualna także w momencie wygranej
+  const throwsRef = useRef(0)
 
   useEffect(() => {
     bestFor('lotka', 'low').then(setBest)
@@ -41,6 +44,7 @@ export default function GameLotka501() {
 
   const onHit = async (res) => {
     if (status !== 'playing') return
+    throwsRef.current += 1          // każde kliknięcie = jeden rzut
     const thrown = dartsInTurn + 1
     const newScore = score - res.points
     setDarts((d) => [...d, res])
@@ -48,7 +52,8 @@ export default function GameLotka501() {
 
     // WYGRANA: dokładnie 0 przez pole podwójne (lub bull)
     if (newScore === 0 && (res.double || res.points === 50)) {
-      const total = totalDarts + 1
+      const total = throwsRef.current
+      setTotalDarts(total)
       setScore(0)
       setDartsInTurn(thrown)
       setStatus('won')
@@ -93,6 +98,8 @@ export default function GameLotka501() {
   }
 
   const restart = () => {
+    throwsRef.current = 0
+    setTotalDarts(0)
     setScore(501)
     setTurnStart(501)
     setDarts([])
@@ -100,7 +107,6 @@ export default function GameLotka501() {
     setLast(null)
     setMsg('')
     setStatus('playing')
-    setTotalDarts(0)
     setTurnNo(1)
     setIsRecord(false)
   }
@@ -154,8 +160,10 @@ export default function GameLotka501() {
         <Card className="pop border-gold/50 text-center">
           <div className="text-4xl">🎯</div>
           <h3 className="mt-1 text-xl font-black">LOTKA 501 — wygrana!</h3>
-          <p className="mt-1 text-sm text-muted">Ukończyłeś grę w {totalDarts} rzutów.</p>
-          {isRecord && <Badge tone="green" className="mt-2">🏆 Nowy rekord!</Badge>}
+          <p className="mt-1 text-sm text-muted">
+            Ukończyłeś grę w <b className="text-gold">{totalDarts} rzutów</b> (tyle kliknięć w tarczę).
+          </p>
+          {isRecord && <Badge tone="green" className="mt-2">🏆 Nowy rekord — najmniej rzutów!</Badge>}
           <Button className="mt-3" onClick={restart}>Zagraj od nowa</Button>
         </Card>
       )}

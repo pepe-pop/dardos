@@ -13,6 +13,7 @@ import { uid, deviceId } from './id.js'
 
 const K = {
   nickname: 'd10.nickname',
+  entered: 'd10.entered',
   participants: 'd10.participants',
   photos: 'd10.photos',
   sentences: 'd10.sentences',
@@ -83,6 +84,15 @@ export const localStore = {
     if (n) write(K.nickname, n)
     emit()
     return n
+  },
+
+  /** Czy użytkownik przeszedł bramkę wejścia (podał poprawne hasło zjazdu). */
+  getEntered() {
+    return read(K.entered, false) === true
+  },
+  setEntered() {
+    write(K.entered, true)
+    emit()
   },
 
   registerParticipant() {

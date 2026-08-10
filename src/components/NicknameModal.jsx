@@ -3,19 +3,17 @@ import { store } from '../lib/store.js'
 import { Button } from './ui.jsx'
 
 /**
- * Onboarding: imię/pseudonim. Zapisane lokalnie (localStorage / profil urządzenia).
- * Można pominąć i uzupełnić później — bez pseudonimu nie da się dodawać treści.
+ * Edycja pseudonimu (po wejściu do aplikacji — bramka z hasłem już była).
+ * Pseudonim zapisany lokalnie; widzą go inni przy zdjęciach, zdaniach i wynikach.
  */
-export default function NicknameModal({ onClose, force = false }) {
+export default function NicknameModal({ onClose }) {
   const [name, setName] = useState(store.getNickname() || '')
-  const saved = !!store.getNickname()
 
   const submit = (e) => {
     e.preventDefault()
     const trimmed = name.trim()
     if (trimmed) {
       store.setNickname(trimmed)
-      store.registerParticipant()
       onClose && onClose()
     }
   }
@@ -36,9 +34,9 @@ export default function NicknameModal({ onClose, force = false }) {
             ✕
           </button>
         </div>
-        <h2 className="text-xl font-extrabold">{saved ? 'Twój pseudonim' : 'Witaj na zjeździe 10-lecia!'}</h2>
+        <h2 className="text-xl font-extrabold">Twój pseudonim</h2>
         <p className="mt-1 text-sm text-muted">
-          Podaj imię lub pseudonim — zobaczą je inni przy zdjęciach, zdaniach i wynikach gier. Zapiszemy je na tym urządzeniu.
+          Zobaczą go inni przy zdjęciach, zdaniach i wynikach gier. Zapisujemy go na tym urządzeniu.
         </p>
         <form onSubmit={submit} className="mt-4 space-y-3">
           <input
@@ -49,14 +47,7 @@ export default function NicknameModal({ onClose, force = false }) {
             placeholder="np. Dartysta Marek"
             className="w-full rounded-2xl border border-white/10 bg-night px-4 py-3.5 text-base outline-none placeholder:text-muted/60 focus:border-gold/60"
           />
-          <Button type="submit" disabled={!name.trim()}>
-            {saved ? 'Zapisz zmiany' : 'Wejdź do aplikacji 🎯'}
-          </Button>
-          {!saved && (
-            <button type="button" onClick={onClose} className="w-full py-2 text-center text-sm font-semibold text-muted">
-              Później — tylko pooglądam
-            </button>
-          )}
+          <Button type="submit" disabled={!name.trim()}>Zapisz</Button>
         </form>
       </div>
     </div>

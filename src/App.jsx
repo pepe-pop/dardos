@@ -4,6 +4,7 @@ import { store, useStoreVersion } from './lib/store.js'
 import TopBar from './components/TopBar.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import NicknameModal from './components/NicknameModal.jsx'
+import EntryGate from './components/EntryGate.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Home from './pages/Home.jsx'
 import History from './pages/History.jsx'
@@ -28,17 +29,18 @@ function ScrollTop() {
 
 function Layout() {
   useStoreVersion()
+  const [entered, setEntered] = useState(() => {
+    try { return !!store.getEntered() } catch { return false }
+  })
   const [nickModal, setNickModal] = useState(false)
 
-  // Pierwsze wejście bez pseudonimu → pokaż powitanie z prośbą o imię
-  useEffect(() => {
-    if (!store.getNickname()) setNickModal(true)
-  }, [])
-
-  const openNickname = () => setNickModal(true)
+  // Bramka wejścia: bez poprawnego hasła nie ma dostępu do aplikacji
+  if (!entered) {
+    return <EntryGate onEnter={() => setEntered(true)} />
+  }
 
   return (
-    <AppCtx.Provider value={{ openNickname }}>
+    <AppCtx.Provider value={{ openNickname: () => setNickModal(true) }}>
       <div className="min-h-dvh bg-night text-cream pb-24">
         <ScrollTop />
         <TopBar />
@@ -49,10 +51,10 @@ function Layout() {
               <Route path="/historia" element={<History />} />
               <Route path="/galeria" element={<Gallery />} />
               <Route path="/gry" element={<Games />} />
-            <Route path="/gry/quiz" element={<GameQuiz />} />
-            <Route path="/gry/lotka" element={<GameLotka501 />} />
-            <Route path="/gry/rok" element={<GameYear />} />
-            <Route path="/gry/memory" element={<GameMemory />} />
+              <Route path="/gry/quiz" element={<GameQuiz />} />
+              <Route path="/gry/lotka" element={<GameLotka501 />} />
+              <Route path="/gry/rok" element={<GameYear />} />
+              <Route path="/gry/memory" element={<GameMemory />} />
               <Route path="/gry/bingo" element={<GameBingo />} />
               <Route path="/kto" element={<GameKtoTo />} />
               <Route path="/admin" element={<Admin />} />

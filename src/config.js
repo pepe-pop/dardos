@@ -1,15 +1,20 @@
 /**
  * KONFIGURACJA APLIKACJI — wszystko co musisz dostosować do swojego klubu.
- * Zobacz sekcję „Edycja treści" w KONCEPCJA.md.
+ * Zobacz sekcję „Gdzie zmienić treści" w README.md.
+ *
+ * 🔐 HASŁA I KLUCZE (adminKey, appPassword, klucze Firebase) NIE są tu na sztywno.
+ * Pochodzą ze zmiennych środowiskowych Vite (plik .env — ignorowany przez gita,
+ * lub sekrety GitHub Actions przy deployu). Poniższe wartości to TYLKO fallbacki
+ * do trybu demo — w produkcji ustaw VITE_APP_PASSWORD i VITE_ADMIN_KEY.
  */
 export const CLUB = {
-  name: 'PeKaeS x PeKaeSsa',          // TODO: pełna nazwa klubu
-  shortName: 'DARDOS',                // TODO: skrót / logo
-  city: 'Zamość',
-  foundedYear: 2016,
-  eventDate: '2026-08-21T15:00:00+02:00', // TODO: data i godzina zjazdu (format ISO)
-  eventPlace: 'Ranczo DEBRY Skierbieszów', // TODO: miejsce
-  eventLabel: '10-lecie PeKaeSu',
+  name: 'NASZ KLUB DARTA',          // TODO: pełna nazwa klubu
+  shortName: 'DART',                // TODO: skrót / logo
+  city: 'Warszawa',
+  foundedYear: 2015,
+  eventDate: '2026-09-12T15:00:00+02:00', // TODO: data i godzina zjazdu (format ISO)
+  eventPlace: 'Klubokawiarnia, ul. Przykładowa 1', // TODO: miejsce
+  eventLabel: 'Zjazd 10-lecia',
   /** Domyślny folder, do którego trafiają zdjęcia dodane przez uczestników
    *  (tylko administrator może przenieść je do innych folderów). */
   jubileeFolder: 'X-lecie PeKaeS',
@@ -17,16 +22,19 @@ export const CLUB = {
 
 export const FEATURES = {
   /** 'local'  = demo bez backendu (localStorage) — działa od razu, zero konfiguracji
-   *  'firebase' = produkcja (Firestore + Storage) — wymaga src/firebase-config.js
-   */
+   *  'firebase' = produkcja (Firestore + Storage) — wymaga sekretów w .env / GitHub Secrets */
   storageMode: 'local',
 
-  /** Klucz panelu organizatora (ścieżka #/admin). ZMIEŃ na własny, długi ciąg. */
-  adminKey: 'pekaes-admin2016',
+  /** 🔐 Hasło wejścia do aplikacji dla UCZESTNIKÓW (inne niż klucz admina!).
+   *  Ustaw w .env: VITE_APP_PASSWORD=twoje-tajne-haslo */
+  appPassword: import.meta.env.VITE_APP_PASSWORD || 'dart10',
+
+  /** 🔐 Klucz panelu organizatora (#/admin). Ustaw w .env: VITE_ADMIN_KEY=tajny-klucz */
+  adminKey: import.meta.env.VITE_ADMIN_KEY || 'dart10-admin',
 
   /** Gra „Kto to powiedział?" startuje po min. tylu ZATWIERDZONYCH zdaniach (może też ręcznie admin) */
   minSentencesToStart: 6,
-  maxSentenceLen: 200,
+  maxSentenceLen: 160,
   minSentenceLen: 10,
 
   /** Ograniczenia uploadu zdjęć */
@@ -36,3 +44,13 @@ export const FEATURES = {
   thumbWidth: 520,                // miniaturka do siatki
   thumbQuality: 0.7,
 };
+
+// Ostrzeżenie, jeśli działamy na domyślnych (demo) hasłach
+if (import.meta.env.PROD || import.meta.env.DEV) {
+  if (FEATURES.adminKey === 'dart10-admin' || FEATURES.appPassword === 'dart10') {
+    console.warn(
+      '⚠️ Używasz domyślnych haseł demo. Ustaw VITE_APP_PASSWORD i VITE_ADMIN_KEY ' +
+      '(plik .env lokalnie / sekrety GitHub Actions) — szczegóły w README.md.'
+    )
+  }
+}

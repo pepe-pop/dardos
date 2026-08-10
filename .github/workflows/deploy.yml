@@ -1,5 +1,8 @@
 # Automatyczny deploy na GitHub Pages po każdym pushu do gałęzi main.
-# Uwaga: używamy oficjalnego akcji Pages (deploy-pages) — nie liczy się do limitu 10 buildów/h.
+# Sekrety (hasła, klucze Firebase) pochodzą z GitHub Actions Secrets —
+# NIE są zapisane w repozytorium. Ustaw je w: repo → Settings →
+# Secrets and variables → Actions (nazwy: VITE_APP_PASSWORD, VITE_ADMIN_KEY, VITE_FIREBASE_*).
+# Jeśli sekretu brak, build użyje domyślnych wartości demo.
 name: Deploy na GitHub Pages
 
 on:
@@ -27,6 +30,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # 🔐 Sekrety GitHub → zmienne builda (bez nich działają wartości demo)
+          VITE_APP_PASSWORD: ${{ secrets.VITE_APP_PASSWORD }}
+          VITE_ADMIN_KEY: ${{ secrets.VITE_ADMIN_KEY }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

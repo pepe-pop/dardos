@@ -6,8 +6,8 @@ import { Button, Card, Badge, SectionTitle } from '../components/ui.jsx'
 
 /**
  * Panel organizatora: #/admin (klucz w polu lub ?klucz=... w adresie).
- * Moderacja zdań, zarządzanie zdjęciami (foldery, rok, usuwanie — też zbiorczo),
- * sterowanie grą, wyniki, eksport kopii zapasowej.
+ * Zarządzanie zdjęciami (foldery, rok, usuwanie — też zbiorczo),
+ * moderacja zdań, sterowanie grą, wyniki, eksport kopii zapasowej.
  */
 
 function Gate({ onOk }) {
@@ -30,7 +30,7 @@ function Gate({ onOk }) {
     <Card className="mx-auto mt-10 max-w-sm">
       <div className="text-2xl">🔐</div>
       <h1 className="mt-1 text-lg font-extrabold">Panel organizatora</h1>
-      <p className="mt-1 text-sm text-muted">Podaj klucz administratora (widnieje w src/config.js).</p>
+      <p className="mt-1 text-sm text-muted">Podaj klucz administratora (w .env / sekretach GitHub, nie w repo).</p>
       <div className="mt-4 space-y-3">
         <input
           value={key}
@@ -55,11 +55,15 @@ export default function Admin() {
 }
 
 /* ================= ZDJĘCIA: zarządzanie folderami (akcje zbiorcze) ================= */
+const NEW_FOLDER = '__nowy__'
+
 function PhotoManager() {
   const photos = store.listPhotos()
   const folders = photoFolders(photos)
   const [sel, setSel] = useState(() => new Set())
   const [moveTo, setMoveTo] = useState('')
+  const [newFolder, setNewFolder] = useState('')     // nazwa nowego folderu (zbiorczo)
+  const [inlineNew, setInlineNew] = useState(null)   // { id, name } — nowy folder przy pojedynczym zdjęciu
   const [note, setNote] = useState('')
 
   const selectedCount = sel.size
@@ -75,13 +79,23 @@ function PhotoManager() {
   const selectAll = () => setSel(new Set(photos.map((p) => p.id)))
   const clear = () => setSel(new Set())
 
+  /** Przeniesienie zbiorcze: do istniejącego folderu albo nowego (wpisanego przez admina). */
   const applyMove = () => {
-    if (!selectedCount || !moveTo) return
-    const target = moveTo === '__nowy__' ? (window.prompt('Nazwa nowego folderu:') || '').trim() : moveTo
+    if (!selectedCount) return
+    let target = moveTo
+    if (target === NEW_FOLDER) {
+      const t = newFolder.trim()
+      if (t.length < 2) {
+        setNote('Wpisz nazwę nowego folderu (min. 2 znaki).')
+        return
+      }
+      target = t
+    }
     if (!target) return
     store.updatePhotos([...sel], { folder: target })
     setSel(new Set())
     setMoveTo('')
+    setNewFolder('')
     setNote(`Przeniesiono ${selectedCount} zdjęć do folderu „${target}".`)
   }
 
@@ -107,6 +121,17 @@ function PhotoManager() {
     setNote(`Przeniesiono zdjęcie do folderu „${folder}".`)
   }
 
+  const saveInlineNew = (p) => {
+    const n = (inlineNew.name || '').trim()
+    if (n.length < 2) {
+      setNote('Wpisz nazwę nowego folderu (min. 2 znaki).')
+      return
+    }
+    store.updatePhoto(p.id, { folder: n })
+    setInlineNew(null)
+    setNote(`Przeniesiono zdjęcie do nowego folderu „${n}".`)
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -117,23 +142,45 @@ function PhotoManager() {
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-2">
+          {/* przenoszenie zbiorcze */}
           <div className="flex items-center gap-2">
             <select
               value={moveTo}
-              onChange={(e) => setMoveTo(e.target.value)}
+              onChange={(e) => { setMoveTo(e.target.value); if (e.target.value !== NEW_FOLDER) setNewFolder('') }}
               className="flex-1 rounded-2xl border border-white/10 bg-night px-3 py-2.5 text-sm outline-none focus:border-gold/60"
             >
               <option value="">Przenieś do folderu…</option>
               {folders.map((f) => <option key={f} value={f}>{f}</option>)}
-              <option value="__nowy__">➕ Nowy folder…</option>
+              <option value={NEW_FOLDER}>➕ Nowy folder…</option>
             </select>
-            <Button className="w-auto px-3 py-2.5 text-xs" disabled={!selectedCount || !moveTo} onClick={applyMove}>Przenieś</Button>
+            <Button
+              className="w-auto px-3 py-2.5 text-xs"
+              disabled={!selectedCount || !moveTo || (moveTo === NEW_FOLDER && !newFolder.trim())}
+              onClick={applyMove}
+            >
+              {moveTo === NEW_FOLDER ? 'Utwórz i przenieś' : 'Przenieś'}
+            </Button>
           </div>
+
+          {/* pole na nazwę nowego folderu (zbiorczo) */}
+          {moveTo === NEW_FOLDER && (
+            <div className="rise">
+              <input
+                value={newFolder}
+                onChange={(e) => setNewFolder(e.target.value)}
+                maxLength={40}
+                placeholder="Nazwa nowego folderu, np. Zjazd 2026 lub Liga 2019…"
+                className="w-full rounded-2xl border border-gold/40 bg-night px-3 py-2.5 text-sm outline-none focus:border-gold"
+              />
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <Button variant="ghost" className="w-auto px-3 py-2.5 text-xs" disabled={!selectedCount} onClick={applyYear}>✏️ Zmień rok</Button>
             <Button variant="red" className="w-auto px-3 py-2.5 text-xs" disabled={!selectedCount} onClick={applyDelete}>🗑 Usuń zaznaczone</Button>
           </div>
         </div>
+
         {note && <p className="mt-2 text-sm font-semibold text-verdant">✓ {note}</p>}
         <p className="mt-2 text-xs text-muted">
           Zdjęcia od uczestników trafiają do folderu <b>{CLUB.jubileeFolder}</b> — tutaj możesz je przenieść do roczników lub usunąć.
@@ -165,15 +212,38 @@ function PhotoManager() {
                     <b>{p.year}</b>
                     <span className="text-muted">folder:</span>
                     <select
-                      value={p.folder || ''}
-                      onChange={(e) => moveSingle(p.id, e.target.value)}
+                      value={inlineNew && inlineNew.id === p.id ? NEW_FOLDER : (p.folder || '')}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v === NEW_FOLDER) setInlineNew({ id: p.id, name: '' })
+                        else { setInlineNew(null); moveSingle(p.id, v) }
+                      }}
                       className="rounded-lg border border-white/10 bg-night px-2 py-1 text-xs outline-none"
                     >
                       {folders.includes(p.folder) ? null : <option value={p.folder}>{p.folder}</option>}
                       {folders.map((f) => <option key={f} value={f}>{f}</option>)}
-                      <option value="__nowy__">➕ Nowy…</option>
+                      <option value={NEW_FOLDER}>➕ Nowy folder…</option>
                     </select>
                   </div>
+                  {/* wpisywanie nazwy nowego folderu (pojedyncze zdjęcie) */}
+                  {inlineNew && inlineNew.id === p.id && (
+                    <div className="rise mt-2 flex items-center gap-2">
+                      <input
+                        value={inlineNew.name}
+                        onChange={(e) => setInlineNew({ ...inlineNew, name: e.target.value })}
+                        maxLength={40}
+                        placeholder="Nazwa nowego folderu…"
+                        className="min-w-0 flex-1 rounded-lg border border-gold/40 bg-night px-2 py-1.5 text-xs outline-none"
+                      />
+                      <button
+                        onClick={() => saveInlineNew(p)}
+                        className="rounded-lg bg-verdant px-3 py-1.5 text-xs font-bold text-night"
+                      >
+                        Zapisz
+                      </button>
+                      <button onClick={() => setInlineNew(null)} className="rounded-lg bg-white/10 px-2 py-1.5 text-xs">✕</button>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => { if (window.confirm('Usunąć to zdjęcie?')) store.deletePhoto(p.id) }}

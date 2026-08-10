@@ -12,12 +12,6 @@ export const TIMELINE = [
     quote: '„Zaczęło się od piwa i jednej lotki..."',
   },
   {
-    year: 2015,
-    title: 'TESTER',
-    text: 'Debiut w ele, ale nikt DSDSDSmy [EDYTUJ].',
-    facts: ['10 meczów, 2 zwycięstwa,100 BROWAR'],
-  },
-  {
     year: 2016,
     title: 'Pierwszy sezon ligowy',
     text: 'Debiut w lidze okręgowej. Nie wygraliśmy wiele, ale nikt nie miał do nas pretensji — liczyło się, że gramy [EDYTUJ].',
@@ -84,11 +78,11 @@ export const TIMELINE = [
 /** Duże liczby — sekcja „10 lat w liczbach" */
 export const STATS = [
   { value: 10, suffix: '', label: 'lat wspólnej gry' },
-  { value: 2016, suffix: '', label: 'rok założenia' },
-  { value: 13, suffix: '', label: 'członków klubu' },
-  { value: 2137, suffix: '', label: 'sezonów ligowych' },
-  { value: 67, suffix: '', label: 'turniejów' },
-  { value: 69, suffix: '', label: 'pucharów w gablocie' },
+  { value: 2015, suffix: '', label: 'rok założenia' },
+  { value: 32, suffix: '', label: 'członków klubu' },
+  { value: 12, suffix: '', label: 'sezonów ligowych' },
+  { value: 47, suffix: '', label: 'turniejów' },
+  { value: 8, suffix: '', label: 'pucharów w gablocie' },
 ]
 
 /** Cytaty członków — przykładowe, zamień na prawdziwe wypowiedzi */
