@@ -8,12 +8,12 @@
  * do trybu demo — w produkcji ustaw VITE_APP_PASSWORD i VITE_ADMIN_KEY.
  */
 export const CLUB = {
-  name: 'PeKaeS x PeKaeSsa',          // TODO: pełna nazwa klubu
-  shortName: 'DARDOS',                // TODO: skrót / logo
+  name: 'PeKaeS x PeKaeSsa',
+  shortName: 'DARDOS',
   city: 'Zamość',
   foundedYear: 2016,
-  eventDate: '2026-08-21T15:00:00+02:00', // TODO: data i godzina zjazdu (format ISO)
-  eventPlace: 'Ranczo DEBRY Skierbieszów', // TODO: miejsce
+  eventDate: '2026-08-21T15:00:00+02:00',
+  eventPlace: 'Ranczo DEBRY Skierbieszów',
   eventLabel: 'X-lecie PeKaeSu',
   /** Domyślny folder, do którego trafiają zdjęcia dodane przez uczestników
    *  (tylko administrator może przenieść je do innych folderów). */
