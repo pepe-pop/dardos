@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// ============================================================
+// REGUŁY STORAGE — zdjęcia zjazdowe
+// Wgranie: firebase deploy --only storage
+// ============================================================
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /zdjecia/{allPaths=**} {
+      // Odczyt publiczny (podgląd galerii)
+      allow read: if true;
+
+      // Upload: każdy może wrzucać pliki JPG max 5 MB
+      allow create: if
+        request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/jpeg')
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.name.matches('.*\\.(jpg|jpeg)$');
+
+      // Usuwanie/nadpisywanie: tylko admin
+      allow update, delete: if request.resource != null && adminToken(request);
+    }
+
+    // Funkcja pomocnicza — patrz uwaga w firestore.rules
+    function adminToken(request) {
+      return request.headers.get('x-admin-key') == 'DZISIEJSZY-TAJNY-KLUCZ-ZMIEN-MNIE';
+    }
+  }
+}
