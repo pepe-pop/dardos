@@ -70,8 +70,18 @@ export const firebaseStore = {
   async countParticipants() {
     await ensure()
     const fs = await import('firebase/firestore')
-    const snap = await fs.getDoc(fs.doc(db, 'ustawienia', 'liczniki'))
-    return snap.exists() ? (snap.data().uczestnicy || 0) : 0
+    try {
+      // Liczymy faktyczne dokumenty uczestników (1 dokument na urządzenie, id = deviceId).
+      // Na Spark nie ma taniego count() — getDocs + size (1 odczyt na dokument, limit 1000
+      // wystarczy na każdy zjazd; odświeżanie co 30 s = kilka tys. odczytów/dzień — bezpiecznie).
+      const q = fs.query(fs.collection(db, 'uczestnicy'), fs.limit(1000))
+      const snap = await fs.getDocs(q)
+      return snap.size
+    } catch (e) {
+      // Fallback: licznik ręczny (gdyby był ustawiony w ustawienia/liczniki)
+      const snap = await fs.getDoc(fs.doc(db, 'ustawienia', 'liczniki'))
+      return snap.exists() ? (snap.data().uczestnicy || 0) : 0
+    }
   },
 
   /* -------------------- ZDJĘCIA -------------------- */
@@ -89,7 +99,11 @@ export const firebaseStore = {
     const base = `zdjecia/${folder}`
     const fullUrl = await uploadFile(dataUrlToBlob(dataUrl), `${base}/${id}.jpg`)
     const thumbUrl = thumbDataUrl ? await uploadFile(dataUrlToBlob(thumbDataUrl), `${base}/${id}-thumb.jpg`) : fullUrl
-    const doc = { author, caption, year, folder, status: 'approved', src: fullUrl, thumb: thumbUrl, at: fs.serverTimestamp() }
+    // Uwaga: ZGODNOŚĆ z regułami! firestore.rules → match /zdjecia:
+    // create pozwala na DOKŁADNIE pola: author, caption, year, folder, src, thumb, at.
+    // Nie dodawaj tu innych pól (np. status) — inaczej zapis dostanie
+    // "missing or insufficient permissions" (błąd: zdjęcie w Storage, ale nie w galerii).
+    const doc = { author, caption, year, folder, src: fullUrl, thumb: thumbUrl, at: fs.serverTimestamp() }
     await fs.setDoc(fs.doc(db, 'zdjecia', id), doc)
     return { id, ...doc }
   },

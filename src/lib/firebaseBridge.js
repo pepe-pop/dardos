@@ -112,6 +112,14 @@ export const firebaseBridge = {
     } catch { /* ignore */ }
   },
   countParticipants: () => cache.participants,
+  /** Odświeża licznik uczestników z bazy (np. co 30 s na stronie głównej). */
+  async refreshParticipants() {
+    try {
+      const n = await firebaseStore.countParticipants()
+      cache.participants = n || 0
+      emit()
+    } catch { /* ignore */ }
+  },
 
   /* -------------------- ZDJĘCIA -------------------- */
   listPhotos: () => cache.photos,

@@ -108,6 +108,8 @@ export const localStore = {
   countParticipants() {
     return read(K.participants, []).length
   },
+  /** W trybie lokalnym licznik jest w pamięci — odświeżanie zbędne. */
+  async refreshParticipants() {},
 
   /* -------------------- ZDJĘCIA (foldery) -------------------- */
   listPhotos() {

@@ -84,6 +84,20 @@ function Layout() {
   })
   const [nickModal, setNickModal] = useState(false)
 
+  // Utrzymanie logowania po odświeżeniu: `entered` jest inicjalizowane ZANIM dane
+  // z Firebase się załadują (cache pusty → false). Subskrybujemy zmiany store —
+  // gdy loadAll() ustawi cache.entered, stan się zsynchronizuje i bramka nie wróci.
+  useEffect(() => {
+    const un = store.onChange
+      ? store.onChange(() => {
+          let cur = false
+          try { cur = !!store.getEntered() } catch { /* ignore */ }
+          setEntered((prev) => (prev === cur ? prev : cur))
+        })
+      : undefined
+    return () => un && un()
+  }, [])
+
   // Tryb Firebase: najpierw wczytaj dane z bazy (ekran ładowania → ekran błędu/UI)
   const [fbState, setFbState] = useState(isFirebase ? 'loading' : 'ready')
   const [fbError, setFbError] = useState(null)

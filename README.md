@@ -120,9 +120,12 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abc...
 |---|---|---|
 | **Pusta/„biała" strona** | stary build albo (historycznie) błąd asynchroniczności w trybie Firebase | `npm run build` + push; błąd został naprawiony (patrz niżej) |
 | **„Brak konfiguracji Firebase — wypełnij .env"** | placeholdery zamiast prawdziwych danych | Krok 5: uzupełnij `.env` / sekrety GitHub |
-| **„PERMISSION_DENIED"** | reguły nie wgrane albo projekt w trybie testowym z innymi regułami | Krok 6: wklej `firestore.rules` i `storage.rules` |
+| **„PERMISSION_DENIED"** | reguły nie wgrane albo **nieaktualna wersja reguł** | Krok 6: wklej aktualne `firestore.rules` i `storage.rules` z repo (ważne!) |
+| **„missing or insufficient permissions" przy dodawaniu zdjęcia** | kod wysyłał do Firestore pole `status`, którego reguły nie dozwalają → zapis dokumentu odrzucony (zdjęcie w Storage, ale nie w galerii) | **naprawione w kodzie** (pole usunięte); jeśli nadal — **prześlij ponownie aktualne reguły** `firebase/firestore.rules` (Firestore → Rules) |
 | **„Przekroczono czas oczekiwania…"** | zły `projectId`, brak internetu, Firebase nie odpowiada | sprawdź `VITE_FIREBASE_PROJECT_ID`, połączenie; „Spróbuj ponownie" |
 | **Aplikacja działa, ale jest pusta (0 zdjęć/zdań)** | zły `projectId` — SDK „cicho" przechodzi w tryb offline | popraw `VITE_FIREBASE_PROJECT_ID` i przebuduj |
+| **Po odświeżeniu wraca ekran logowania** | stan `entered` inicjalizowany przed załadowaniem danych z Firebase | **naprawione** — stan synchronizuje się po załadowaniu danych; upewnij się, że masz najnowszy build |
+| **Licznik uczestników pokazuje 0** | licznik czytał dokument, którego nikt nie aktualizował | **naprawione** — liczy dokumenty uczestników (1 na urządzenie) i odświeża co 30 s na stronie głównej |
 | **Hasła nie działają na stronie** | sekrety GitHub nie ustawione | Krok 5.9: dodaj `VITE_APP_PASSWORD` / `VITE_ADMIN_KEY` |
 
 > 🛠️ **Dlaczego wcześniej „nic się nie pokazywało"?** Tryb Firebase używał w 100% asynchronicznego magazynu danych, a ekrany czytały dane synchronicznie — React nie umie wyrenderować Promise, więc aplikacja wywalała się na pustą stronę (błąd „Objects are not valid as a React child: [object Promise]"). Naprawiłem to przez **most synchronizujący** (`src/lib/firebaseBridge.js`): dane są wczytywane do lokalnej kopii i dopiero potem renderowane (ekran ładowania), a każdy błąd połączenia pokazuje czytelny ekran z instrukcją zamiast pustki.

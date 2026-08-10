@@ -60,9 +60,14 @@ export default function Home() {
   const { openNickname } = useApp()
   const target = new Date(CLUB.eventDate).getTime()
 
-  // licznik uczestników: jedna wizyta = jedna "rejestracja" (po urządzeniu)
+  // licznik uczestników: jedna wizyta = jedna "rejestracja" (po urządzeniu);
+  // w trybie firebase licznik odświeżany co 30 s z bazy (refreshParticipants)
   useEffect(() => {
-    store.registerParticipant()
+    if (store.registerParticipant) store.registerParticipant()
+    const refresh = () => { if (store.refreshParticipants) store.refreshParticipants() }
+    refresh()
+    const id = setInterval(refresh, 30000)
+    return () => clearInterval(id)
   }, [])
 
   return (
