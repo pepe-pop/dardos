@@ -56,9 +56,9 @@ export default function EntryGate({ onEnter }) {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-panel p-5">
-          <h2 className="text-lg font-extrabold">Wejście na zjazd</h2>
+          <h2 className="text-lg font-extrabold">Głowa w betoniarce AUUU</h2>
           <p className="mt-1 text-xs text-muted">
-            Podaj pseudonim i hasło zjazdu (dostaniesz je od organizatora). Hasło jest jedno dla wszystkich uczestników.
+            Podaj pseudonim i hasło zjazdu (dostaniesz je u Pepe). Hasło jest jedno dla wszystkich uczestników.
           </p>
           <form onSubmit={submit} className="mt-4 space-y-3">
             <input
@@ -66,7 +66,7 @@ export default function EntryGate({ onEnter }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={30}
-              placeholder="np. Dartysta Marek"
+              placeholder="np. Pan Darter Polski Orzeł"
               autoComplete="nickname"
               className="w-full rounded-2xl border border-white/10 bg-night px-4 py-3.5 text-base outline-none placeholder:text-muted/60 focus:border-gold/60"
             />

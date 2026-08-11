@@ -16,7 +16,7 @@ export default function TopBar() {
           {/* LOGO KLUBU — zamień plik public/logo.png na własne logo (patrz README → „Gdzie zmienić treści") */}
           {logoOk ? (
             <img
-              src="./logo.png"
+              src="./logo.jpg"
               alt="Logo klubu"
               className="h-9 w-9 rounded-full border border-gold/50 object-cover"
               onError={() => setLogoOk(false)}

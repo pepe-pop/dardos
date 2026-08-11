@@ -78,17 +78,17 @@ export const TIMELINE = [
 /** Duże liczby — sekcja „10 lat w liczbach" */
 export const STATS = [
   { value: 10, suffix: '', label: 'lat wspólnej gry' },
-  { value: 2015, suffix: '', label: 'rok założenia' },
-  { value: 32, suffix: '', label: 'członków klubu' },
-  { value: 12, suffix: '', label: 'sezonów ligowych' },
-  { value: 47, suffix: '', label: 'turniejów' },
-  { value: 8, suffix: '', label: 'pucharów w gablocie' },
+  { value: 2016, suffix: '', label: 'rok założenia' },
+  { value: 13, suffix: '', label: 'członków klubu' },
+  { value: 2137, suffix: '', label: 'wypitych browarów' },
+  { value: 67, suffix: '', label: 'turniejów' },
+  { value: 69, suffix: '', label: 'pucharów w gablocie' },
 ]
 
 /** Cytaty członków — przykładowe, zamień na prawdziwe wypowiedzi */
 export const QUOTES = [
-  { text: '„Dart to 90% głowa, a 10% to lotki, które ktoś pożyczył i nie oddał."', author: 'Członek klubu' },
-  { text: '„Nie liczy się wynik, liczy się, kto stawia następną kolejkę."', author: 'Kapitan drużyny' },
-  { text: '„Trenowaliśmy tak ciężko, że tarcza prosiła o litość."', author: 'Zawodnik roku' },
-  { text: '„Przez 10 lat zmieniali się gracze, ale nie zmienił się zapach sali."', author: 'Weteran klubu' },
+  { text: '„Gdy cię ojciec bije kablem idź do piwni i skończ doublem"', author: 'JSak' },
+  { text: '„Nie liczy się wynik, liczy się, kto stawia następną kolejkę."', author: 'KTPV' },
+  { text: '„Miało wyjść inaczej"', author: 'W sumie każdy' },
+  { text: '„Srasz? To Sraj"', author: 'Jacek Podkościelny' },
 ]
