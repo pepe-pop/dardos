@@ -15,13 +15,13 @@ function shuffle(arr) {
 
 const YEARS_POOL = TIMELINE.map((t) => t.year)
 
-/** Buduje talię pytań z wydarzeń (oś czasu) i zdjęć z galerii. */
+/** Buduje talię pytań z wydarzeń (oś czasu) i zdjęć z galerii. Tekst stwierdzenia jest PEŁNY (nie ucinamy). */
 function buildDeck() {
   const items = []
   TIMELINE.forEach((t) => {
     items.push({
       year: t.year,
-      clue: `${t.title}: ${t.text.replace(/\s+/g, ' ').slice(0, 90)}…`,
+      clue: `${t.title}: ${t.text.replace(/\s+/g, ' ')}`,
       kind: 'event',
     })
   })
@@ -35,6 +35,41 @@ function buildDeck() {
   return shuffle(items).slice(0, 10)
 }
 
+/** Modal z PEŁNĄ treścią stwierdzenia (dla zdjęć — także z podglądem). */
+function ClueModal({ clue, onClose }) {
+  if (!clue) return null
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="pop max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-white/10 bg-panel p-5 sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-widest text-gold">Stwierdzenie</p>
+          <button
+            onClick={onClose}
+            aria-label="Zamknij"
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-lg text-muted active:scale-95"
+          >
+            ✕
+          </button>
+        </div>
+
+        {clue.src && (
+          <img src={clue.src} alt="" className="mx-auto mt-3 max-h-64 w-full rounded-2xl object-contain bg-night" />
+        )}
+
+        <p className="mt-4 text-base font-bold leading-relaxed text-cream">{clue.text}</p>
+
+        <p className="mt-4 text-center text-xs font-bold text-muted">Który to rok?</p>
+      </div>
+    </div>
+  )
+}
+
 export default function GameYear() {
   const myName = store.getNickname()
   const [deck] = useState(() => buildDeck())
@@ -46,6 +81,7 @@ export default function GameYear() {
   const [isRecord, setIsRecord] = useState(false)
   const [best, setBest] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [clueModal, setClueModal] = useState(null)
 
   // AKTUALNE PYTANIE + OPCJE — hooki muszą być przed wczesnymi returnami!
   const q = qIdx >= 0 && qIdx < deck.length ? deck[qIdx] : null
@@ -67,6 +103,9 @@ export default function GameYear() {
     setQIdx(0)
     bestFor('rok', 'high').then(setBest)
   }
+
+  // modal (fixed overlay) — renderowany w widoku pytania i w podsumowaniu
+  const modalEl = clueModal && <ClueModal clue={clueModal} onClose={() => setClueModal(null)} />
 
   if (deck.length < 2) {
     return (
@@ -127,7 +166,13 @@ export default function GameYear() {
               <div key={i} className={`flex items-start gap-2 rounded-xl px-3 py-2 text-xs ${a.ok ? 'bg-verdant/10' : 'bg-board/10'}`}>
                 <span>{a.ok ? '✔' : '✘'}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="leading-snug text-cream/85">{a.clue.slice(0, 70)}…</p>
+                  {/* kliknięcie w stwierdzenie → modal z pełną treścią */}
+                  <button onClick={() => setClueModal({ text: a.clue, src: a.src })} className="block w-full text-left">
+                    <p className="leading-snug text-cream/85 line-clamp-2">{a.clue}</p>
+                    <span className="text-[10px] font-bold text-gold underline decoration-dotted underline-offset-2">
+                      czytaj całość
+                    </span>
+                  </button>
                   <p className="mt-0.5 font-bold text-gold">→ rok {a.year}</p>
                   {!a.ok && <p className="text-muted">typowałeś: {a.picked}</p>}
                 </div>
@@ -135,6 +180,7 @@ export default function GameYear() {
             ))}
           </div>
         </Card>
+        {modalEl}
       </div>
     )
   }
@@ -144,7 +190,7 @@ export default function GameYear() {
     setPicked(yr)
     const ok = yr === q.year
     if (ok) setCorrect((c) => c + 1)
-    setAnswers((a) => [...a, { clue: q.clue, year: q.year, picked: yr, ok }])
+    setAnswers((a) => [...a, { clue: q.clue, year: q.year, picked: yr, ok, src: q.src }])
     setTimeout(() => {
       setPicked(null)
       setQIdx((i) => i + 1)
@@ -163,10 +209,29 @@ export default function GameYear() {
 
       <Card className="rise text-center">
         <p className="text-xs font-bold uppercase tracking-widest text-gold">Z którego to roku?</p>
+
+        {/* zdjęcie — kliknięcie otwiera modal z pełnym podglądem i podpisem */}
         {q.kind === 'photo' && q.src && (
-          <img src={q.src} alt="" className="mx-auto mt-3 max-h-52 w-full rounded-2xl object-cover" />
+          <button
+            onClick={() => setClueModal({ text: q.clue, src: q.src })}
+            className="mt-3 block w-full"
+            aria-label="Zobacz stwierdzenie"
+          >
+            <img src={q.src} alt="" className="mx-auto max-h-52 w-full rounded-2xl object-cover" />
+          </button>
         )}
-        <p className="mt-3 text-base font-bold leading-snug">{q.clue}</p>
+
+        {/* stwierdzenie — kliknięcie otwiera modal z pełną treścią */}
+        <button
+          onClick={() => setClueModal({ text: q.clue, src: q.src })}
+          className="mt-3 w-full"
+          aria-label="Przeczytaj całe stwierdzenie"
+        >
+          <p className="text-base font-bold leading-snug line-clamp-3">{q.clue}</p>
+          <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-gold">
+            👁️ <span className="underline decoration-dotted underline-offset-2">Przeczytaj całość</span>
+          </span>
+        </button>
       </Card>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -198,6 +263,8 @@ export default function GameYear() {
           {picked === q.year ? 'Dobrze! 🎯' : `To był rok ${q.year}.`}
         </p>
       )}
+
+      {modalEl}
     </div>
   )
 }

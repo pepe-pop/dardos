@@ -8,13 +8,13 @@
  * do trybu demo — w produkcji ustaw VITE_APP_PASSWORD i VITE_ADMIN_KEY.
  */
 export const CLUB = {
-  name: 'NASZ KLUB DARTA',          // TODO: pełna nazwa klubu
-  shortName: 'DART',                // TODO: skrót / logo
-  city: 'Warszawa',
-  foundedYear: 2015,
-  eventDate: '2026-09-12T15:00:00+02:00', // TODO: data i godzina zjazdu (format ISO)
-  eventPlace: 'Klubokawiarnia, ul. Przykładowa 1', // TODO: miejsce
-  eventLabel: 'Zjazd 10-lecia',
+  name: 'PeKaeS x PeKaeSsa',          // TODO: pełna nazwa klubu
+  shortName: 'DADOS',                // TODO: skrót / logo
+  city: 'Zamość',
+  foundedYear: 2016,
+  eventDate: '2026-08-21T15:00:00+02:00', // TODO: data i godzina zjazdu (format ISO)
+  eventPlace: 'Ranczo DEBRY Skierbieszów', // TODO: miejsce
+  eventLabel: 'X-lecie najlepszych darterów w Polsce',
   /** Domyślny folder, do którego trafiają zdjęcia dodane przez uczestników
    *  (tylko administrator może przenieść je do innych folderów). */
   jubileeFolder: 'X-lecie PeKaeS',

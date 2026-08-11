@@ -40,6 +40,58 @@ npm run build
 4. Workflow `.github/workflows/deploy.yml` sam zbuduje i wdroży aplikację.
 5. Otwórz `https://TWOJ-NICK.github.io/darts10/`.
 
+## 📤 Masowy upload zdjęć (bulk upload — dużo zdjęć naraz)
+
+Masz archiwum setek zdjęć i nie chcesz ich dodawać pojedynczo w aplikacji? Użyj skryptu `scripts/bulk-upload.mjs`:
+
+- **Kompresuje tak samo jak aplikacja** (max 1600 px, JPEG ~0.75 + miniaturka 520 px) — typowe 3–6 MB → 150–400 KB, oszczędzasz darmowe limity Firebase,
+- **Opisuje zdjęcia** z pliku CSV (podpis, rok, kategoria),
+- **Wgrywa do Firebase Storage** i tworzy dokumenty w Firestore — zdjęcia **od razu widoczne w galerii** (filtry wg kategorii) i **gotowe do gier** (np. „Zgadnij rok" używa roku),
+- **Idempotentny** — ponowne uruchomienie nie tworzy duplikatów (identyfikator = nazwa pliku).
+
+### Krok 1 — Przygotuj folder ze zdjęciami
+Wrzuć oryginały (JPG/PNG/WebP) do katalogu, np. `zdjecia-bulk/`. Nazwy plików **nie mogą się powtarzać** — najlepiej od razu sensowne, np. `2015-pierwsza-tarcza.jpg`.
+
+### Krok 2 — Przygotuj plik CSV z opisami
+Utwórz `photos-manifest.csv` (szablon: `scripts/manifest.example.csv`). Kolumny:
+
+| Kolumna | Opis | Przykład |
+|---|---|---|
+| `filename` | **dokładna** nazwa pliku (z rozszerzeniem) | `2015-pierwsza-tarcza.jpg` |
+| `caption` | podpis widoczny w galerii | `Pierwsza tarcza w klubie` |
+| `year` | rok (używany też przez grę „Zgadnij rok") | `2015` |
+| `folder` | kategoria w galerii (np. rocznik `2015`, `Liga`, `X-lecie PeKaeS`) | `2015` |
+| `author` | autor (opcjonalnie, domyślnie „Archiwum klubu") | `Archiwum klubu` |
+
+```
+filename,caption,year,folder,author
+2015-pierwsza-tarcza.jpg,Pierwsza tarcza w klubie,2015,2015,Archiwum klubu
+2018-final-ligi.jpg,Finał ligi okręgowej,2018,2018,Archiwum klubu
+```
+
+> 💡 **Excel/Google Sheets po polsku:** zapis CSV używa średnika `;` — skrypt sam wykrywa separator. Pilnuj tylko, by `filename` zgadzało się z nazwą pliku.
+
+### Krok 3 — Wygeneruj klucz serwisowy Firebase
+Konsola Firebase → **Ustawienia projektu (zębatka) → Konta usługowe → „Generuj nowy klucz prywatny"** → zapisz plik jako `service-account.json` **w głównym katalogu projektu** (jest w `.gitignore` — nigdy nie trafi do GitHub).
+
+### Krok 4 — Uruchom skrypt
+```bash
+npm install            # jeśli jeszcze nie (dodaje sharp + firebase-admin)
+
+# 1) sprawdź plan BEZ wysyłki (kompresja + podgląd opisów):
+npm run bulk-upload -- --images ./zdjecia-bulk --manifest photos-manifest.csv --dry-run
+
+# 2) prawdziwy import:
+npm run bulk-upload -- --images ./zdjecia-bulk --manifest photos-manifest.csv --service-account service-account.json
+```
+
+Przydatne opcje: `--limit 5` (test na 5 zdjęciach), `--max-width 1600`, `--quality 0.75`, `--bucket twoj-bucket.appspot.com` (gdy bucket inny niż `project_id.appspot.com`).
+
+### Krok 5 — Sprawdź w aplikacji
+Odśwież aplikację → zdjęcia są w galerii (filtry wg `folder`), a „Zgadnij rok" losuje pytania ze zdjęć z wypełnionym `year`. Jeśli czegoś nie widać: wgraj aktualne reguły (`firebase/firestore.rules` i `firebase/storage.rules`) — patrz sekcja „🔥 Podłączanie Firebase".
+
+> 🧹 **Sprzątanie:** skrypt NIE usuwa plików z Twojego folderu. Po imporcie możesz usunąć `zdjecia-bulk/` lokalnie — kopie w Storage zostają.
+
 ## QR kod
 
 ```bash

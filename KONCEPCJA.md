@@ -329,6 +329,8 @@ darts10/
 │   ├── firestore.rules                 # reguły bazy (moderacja, admin)
 │   └── storage.rules                   # reguły storage (JPG ≤ 5 MB)
 ├── scripts/make-qr.mjs                 # generator kodu QR
+├── scripts/bulk-upload.mjs             # masowy import zdjęć (kompresja + CSV + Firebase)
+├── scripts/manifest.example.csv        # szablon opisu zdjęć do bulk-upload
 ├── public/
 │   ├── favicon.svg / manifest.webmanifest / sw.js   # PWA
 │   └── photos/                         # przykładowe zdjęcia (zamień na własne)

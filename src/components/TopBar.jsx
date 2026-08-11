@@ -27,7 +27,7 @@ export default function TopBar() {
             </span>
           )}
           <span className="leading-tight">
-            <span className="block text-sm font-extrabold tracking-wide">{name ? 'Dart • 10 lat' : 'Klub darta'}</span>
+            <span className="block text-sm font-extrabold tracking-wide">{name ? 'PeKaeS • 10 lat' : 'Dardos'}</span>
             <span className="block text-[10px] font-semibold uppercase tracking-widest text-gold">10-lecie</span>
           </span>
         </Link>

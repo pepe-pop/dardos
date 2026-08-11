@@ -28,8 +28,8 @@ function Countdown({ target }) {
     return (
       <Card className="pulse-gold border-gold/40 text-center">
         <div className="text-2xl">🎉</div>
-        <div className="mt-1 font-extrabold text-gold">Trwa zjazd 10-lecia!</div>
-        <p className="mt-1 text-sm text-muted">Świętujemy razem — zostań z nami na długo.</p>
+        <div className="mt-1 font-extrabold text-gold">PeKaeS dzisiaj do spodu</div>
+        <p className="mt-1 text-sm text-muted">Bawimy się do rana ooo.</p>
       </Card>
     )
   }

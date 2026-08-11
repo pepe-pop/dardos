@@ -8,4 +8,12 @@ dist
 .env.*
 !.env.example
 
+# Klucz serwisowy Firebase (masowy upload) — tajny!
+service-account*.json
+
+# Folder roboczy do masowego importu zdjęć (skrypt bulk-upload)
+zdjecia-bulk/
+
 qr-zjazd.png
+
+photos-manifest.csv

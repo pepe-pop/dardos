@@ -44,7 +44,7 @@ export default function NicknameModal({ onClose }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={30}
-            placeholder="np. Dartysta Marek"
+            placeholder="np. Pan Darter Polski Orzeł"
             className="w-full rounded-2xl border border-white/10 bg-night px-4 py-3.5 text-base outline-none placeholder:text-muted/60 focus:border-gold/60"
           />
           <Button type="submit" disabled={!name.trim()}>Zapisz</Button>
