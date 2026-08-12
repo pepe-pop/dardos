@@ -123,7 +123,7 @@ if (!DRY) {
   try {
     const sa = JSON.parse(readFileSync(SA_FILE, 'utf8'))
     const projectId = sa.project_id
-    bucketName = args.bucket || `${projectId}.firebasestorage.app`
+    bucketName = args.bucket || `${projectId}.appspot.com`
     admin.initializeApp({
       credential: admin.credential.cert(sa),
       storageBucket: bucketName,

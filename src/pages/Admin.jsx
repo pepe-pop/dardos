@@ -80,7 +80,7 @@ function PhotoManager() {
   const clear = () => setSel(new Set())
 
   /** Przeniesienie zbiorcze: do istniejącego folderu albo nowego (wpisanego przez admina). */
-  const applyMove = () => {
+  const applyMove = async () => {
     if (!selectedCount) return
     let target = moveTo
     if (target === NEW_FOLDER) {
@@ -92,44 +92,64 @@ function PhotoManager() {
       target = t
     }
     if (!target) return
-    store.updatePhotos([...sel], { folder: target })
-    setSel(new Set())
-    setMoveTo('')
-    setNewFolder('')
-    setNote(`Przeniesiono ${selectedCount} zdjęć do folderu „${target}".`)
+    try {
+      await store.updatePhotos([...sel], { folder: target })
+      setSel(new Set())
+      setMoveTo('')
+      setNewFolder('')
+      setNote(`Przeniesiono ${selectedCount} zdjęć do folderu „${target}".`)
+    } catch (e) {
+      setNote(`❌ Błąd Firebase: ${(e.message || e).slice(0, 120)} — zmiana nie zapisze się u innych!`)
+    }
   }
 
-  const applyYear = () => {
+  const applyYear = async () => {
     if (!selectedCount) return
     const y = (window.prompt(`Nowy rok dla ${selectedCount} zdjęć (np. 2023):`) || '').trim()
     if (!/^\d{4}$/.test(y)) return
-    store.updatePhotos([...sel], { year: y })
-    setSel(new Set())
-    setNote(`Zmieniono rok na ${y} dla ${selectedCount} zdjęć.`)
+    try {
+      await store.updatePhotos([...sel], { year: y })
+      setSel(new Set())
+      setNote(`Zmieniono rok na ${y} dla ${selectedCount} zdjęć.`)
+    } catch (e) {
+      setNote(`❌ Błąd Firebase: ${(e.message || e).slice(0, 120)}`)
+    }
   }
 
-  const applyDelete = () => {
+  const applyDelete = async () => {
     if (!selectedCount) return
     if (!window.confirm(`Usunąć ${selectedCount} zdjęć? Tej operacji nie można cofnąć.`)) return
-    store.deletePhotos([...sel])
-    setSel(new Set())
-    setNote(`Usunięto ${selectedCount} zdjęć.`)
+    try {
+      await store.deletePhotos([...sel])
+      setSel(new Set())
+      setNote(`Usunięto ${selectedCount} zdjęć.`)
+    } catch (e) {
+      setNote(`❌ Błąd Firebase: ${(e.message || e).slice(0, 120)}`)
+    }
   }
 
-  const moveSingle = (id, folder) => {
-    store.updatePhoto(id, { folder })
-    setNote(`Przeniesiono zdjęcie do folderu „${folder}".`)
+  const moveSingle = async (id, folder) => {
+    try {
+      await store.updatePhoto(id, { folder })
+      setNote(`Przeniesiono zdjęcie do folderu „${folder}".`)
+    } catch (e) {
+      setNote(`❌ Błąd Firebase: ${(e.message || e).slice(0, 120)}`)
+    }
   }
 
-  const saveInlineNew = (p) => {
+  const saveInlineNew = async (p) => {
     const n = (inlineNew.name || '').trim()
     if (n.length < 2) {
       setNote('Wpisz nazwę nowego folderu (min. 2 znaki).')
       return
     }
-    store.updatePhoto(p.id, { folder: n })
-    setInlineNew(null)
-    setNote(`Przeniesiono zdjęcie do nowego folderu „${n}".`)
+    try {
+      await store.updatePhoto(p.id, { folder: n })
+      setInlineNew(null)
+      setNote(`Przeniesiono zdjęcie do nowego folderu „${n}".`)
+    } catch (e) {
+      setNote(`❌ Błąd Firebase: ${(e.message || e).slice(0, 120)}`)
+    }
   }
 
   return (
@@ -246,7 +266,15 @@ function PhotoManager() {
                   )}
                 </div>
                 <button
-                  onClick={() => { if (window.confirm('Usunąć to zdjęcie?')) store.deletePhoto(p.id) }}
+                  onClick={async () => {
+                    if (!window.confirm('Usunąć to zdjęcie?')) return
+                    try {
+                      await store.deletePhoto(p.id)
+                      setNote('Usunięto zdjęcie.')
+                    } catch (e) {
+                      setNote(`❌ Błąd Firebase: ${(e.message || e).slice(0, 120)}`)
+                    }
+                  }}
                   className="grid h-8 w-8 shrink-0 place-items-center self-start rounded-full bg-board/15 text-red-300"
                   aria-label="usuń zdjęcie"
                 >
@@ -326,7 +354,10 @@ function Panel({ tab, setTab }) {
               {pendingSentences.map((s) => (
                 <Card key={s.id} className="!p-3">
                   <p className="text-sm italic leading-snug">„{s.text}"</p>
-                  <p className="mt-1 text-xs font-bold text-gold">— {s.author}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-xs font-bold text-gold">— {s.author}</span>
+                    <Badge tone="muted">runda {s.round || 1}</Badge>
+                  </div>
                   <div className="mt-2 flex gap-2">
                     <Button variant="green" className="w-auto px-3 py-1.5 text-xs" onClick={() => store.updateSentence(s.id, { status: 'approved' })}>Zatwierdź</Button>
                     <Button variant="red" className="w-auto px-3 py-1.5 text-xs" onClick={() => store.updateSentence(s.id, { status: 'rejected' })}>Odrzuć</Button>
@@ -346,7 +377,10 @@ function Panel({ tab, setTab }) {
                 <Card key={s.id} className="!p-3">
                   <p className="text-sm leading-snug">„{s.text}"</p>
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="text-xs font-bold text-verdant">— {s.author}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-verdant">— {s.author}</span>
+                      <Badge tone="muted">runda {s.round || 1}</Badge>
+                    </div>
                     <button onClick={() => store.deleteSentence(s.id)} className="text-xs font-bold text-red-300">usuń</button>
                   </div>
                 </Card>
@@ -360,7 +394,7 @@ function Panel({ tab, setTab }) {
       {tab === 'gra' && (
         <div className="space-y-4">
           <Card>
-            <SectionTitle title="Status gry" />
+            <SectionTitle title="Status gry i rundy" sub={`Aktualna runda: ${game.round || 1}`} />
             <div className="grid grid-cols-3 gap-2">
               {[
                 ['collect', 'Zbiórka'],
@@ -369,7 +403,17 @@ function Panel({ tab, setTab }) {
               ].map(([val, label]) => (
                 <button
                   key={val}
-                  onClick={() => store.setGameStatus({ status: val })}
+                  onClick={() => {
+                    if (val === 'collect') {
+                      // Zakończona → Zbiórka = NOWA runda (numer +1); z Zbiórki zostajemy w tej samej
+                      const nextRound = game.status === 'closed' ? (game.round || 1) + 1 : (game.round || 1)
+                      store.setGameStatus({ status: 'collect', round: nextRound })
+                    } else if (val === 'active') {
+                      store.setGameStatus({ status: 'active', round: game.round || 1 })
+                    } else {
+                      store.setGameStatus({ status: 'closed' })
+                    }
+                  }}
                   className={`rounded-2xl border px-3 py-3 text-sm font-bold transition ${
                     game.status === val ? 'border-gold bg-gold text-night' : 'border-white/10 bg-panel2 text-muted'
                   }`}
@@ -379,7 +423,9 @@ function Panel({ tab, setTab }) {
               ))}
             </div>
             <p className="mt-2 text-xs text-muted">
-              Aktywna = gracze widzą przycisk „GRAJ". Uruchom, gdy zbierzesz wystarczającą liczbę zdań.
+              <b>Zbiórka</b> = zbierasz zdania do aktualnej rundy • <b>Aktywna</b> = gracze grają •
+              <b> Zakończona</b> = zdania zapisują się do tej rundy. Ponowne wciśnięcie <b>Zbiórka</b> po
+              zakończeniu zaczyna <b>nową rundę</b> (numer +1) i zbiórka startuje od nowa.
             </p>
           </Card>
 

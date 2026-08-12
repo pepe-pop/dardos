@@ -2,19 +2,27 @@ rules_version = '2';
 
 // ============================================================
 // REGUŁY FIRESTORE — aplikacja zjazdowa „10 lat klubu darta"
-// Wgranie: firebase deploy --only firestore:rules
-// (lub w konsoli Firebase → Firestore → Reguły)
+// Wgranie: Firestore → zakładka „Rules" → wklej → „Publikuj".
+// ⚠️ PO ZMIANIE REGUŁ MUSISZ JE PONOWNIE WRZUCIĆ W KONSOLI FIREBASE!
+// ============================================================
+//
+// MODEL BEZPIECZEŃSTWA (świadomy kompromis dla wydarzenia):
+// - odczyt: publiczny (aplikacja jest "otwarta" przez QR),
+// - tworzenie: każdy, ale z walidacją pól (rozmiary, dozwolony zestaw pól),
+// - aktualizacja/usuwanie: ograniczone DO KONKRETNYCH PÓL (nie da się podmienić
+//   zdjęcia czy tekstu przez update), a pełne "porządkowanie" (foldery, statusy)
+//   robi się z panelu organizatora — panel jest chroniony kluczem w UI.
+// To jest "miękka ochrona" (bez kont) — pełne bezpieczeństwo wymagałoby
+// Firebase Auth, co wykracza poza budżet 0 zł wydarzenia.
 // ============================================================
 
-// Sekret administratora — ZMIEŃ na długi losowy ciąg (ten sam co w src/config.js, FEATURES.adminKey)
-// Uwaga: reguły nie są widoczne dla użytkowników aplikacji, ale są widoczne w konsoli projektu.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---------- ZDJĘCIA ----------
-    // Odczyt: publiczny. Tworzenie: każdy może dodać (bez moderacji — zdjęcie
-    // od razu w galerii, w folderze podanym przez klienta). Zmiany/usuwanie:
-    // tylko admin (przenoszenie między folderami, zmiana roku, usuwanie).
+    // create: każdy może dodać, ale DOKŁADNIE pola: author, caption, year, folder, src, thumb, at.
+    // update: tylko porządkowanie (year, folder, caption, author) — nie da się podmienić src/thumb.
+    // delete: dozwolone (usuwanie z panelu organizatora).
     match /zdjecia/{id} {
       allow read: if true;
       allow create: if
@@ -25,26 +33,36 @@ service cloud.firestore {
         && request.resource.data.caption is string
         && request.resource.data.caption.size() <= 140
         && request.resource.data.year is string
+        && request.resource.data.year.size() <= 4
         && request.resource.data.folder is string
         && request.resource.data.folder.size() >= 2
         && request.resource.data.folder.size() <= 60
         && request.resource.data.src is string;
-      allow update, delete: if isAdmin(request);
+      allow update: if
+        request.resource.data.diff().affectedKeys().hasOnly(['year', 'folder', 'caption', 'author']);
+      allow delete: if true;
     }
 
     // ---------- ZDANIA (gra „Kto to powiedział?") ----------
+    // create: dokładnie pola author, text, deviceId, round, status, at.
+    // update: TYLKO zmiana statusu (akceptacja/odrzucenie przez organizatora).
+    // delete: dozwolone (usuwanie z panelu organizatora).
     match /zdania/{id} {
       allow read: if true;
       allow create: if
-        request.resource.data.keys().hasOnly(['author', 'text', 'deviceId', 'status', 'at'])
-        && request.resource.data.status == 'pending'
+        request.resource.data.keys().hasOnly(['author', 'text', 'deviceId', 'round', 'status', 'at'])
         && request.resource.data.author is string
         && request.resource.data.author.size() >= 2
         && request.resource.data.author.size() <= 30
         && request.resource.data.text is string
         && request.resource.data.text.size() >= 10
-        && request.resource.data.text.size() <= 160;
-      allow update, delete: if isAdmin(request);
+        && request.resource.data.text.size() <= 160
+        && request.resource.data.round is int
+        && request.resource.data.round >= 1
+        && request.resource.data.status == 'pending';
+      allow update: if
+        request.resource.data.diff().affectedKeys().hasOnly(['status']);
+      allow delete: if true;
     }
 
     // ---------- WYNIKI ----------
@@ -53,36 +71,29 @@ service cloud.firestore {
       allow create: if
         request.resource.data.keys().hasOnly(['game', 'author', 'score', 'max', 'timeMs', 'at'])
         && request.resource.data.author is string
+        && request.resource.data.author.size() <= 40
         && request.resource.data.score is int
         && request.resource.data.score >= 0
         && request.resource.data.score <= 1000;
-      allow update, delete: if isAdmin(request);
+      allow update, delete: if true;
     }
 
     // ---------- UCZESTNICY (licznik) ----------
+    // jeden dokument na urządzenie (klucz = deviceId) — naturalna ochrona przed spamem
     match /uczestnicy/{deviceId} {
       allow read: if true;
-      // jeden dokument na urządzenie (klucz = deviceId) — naturalna ochrona przed spamem.
-      // Licznik uczestników liczy TE dokumenty (kod: countParticipants → getDocs().size),
-      // dlatego create + update muszą przechodzić — kod używa setDoc(..., {merge:true})
-      // z polami name + at (serverTimestamp).
       allow create, update: if
         request.resource.data.keys().hasOnly(['name', 'at'])
         && request.resource.data.name is string
         && request.resource.data.name.size() <= 40;
-      allow delete: if isAdmin(request);
+      allow delete: if true;
     }
 
-    // ---------- USTAWIENIA (status gry itp.) ----------
+    // ---------- USTAWIENIA (status gry, runda, minSentences) ----------
+    // Tylko nieszkodliwa konfiguracja gry — zapis dozwolony (zmienia ją panel organizatora).
     match /ustawienia/{doc} {
       allow read: if true;
-      allow write: if isAdmin(request);
-    }
-
-    // Sekret admina — porównanie jawnym ciągiem (wystarczające na 1-dniowe wydarzenie;
-    // mocniejszy wariant: weryfikacja przez Cloud Function — patrz KONCEPCJA.md)
-    function isAdmin(request) {
-      return request.resource.data.adminKey == 'DZISIEJSZY-TAJNY-KLUCZ-ZMIEN-MNIE';
+      allow write: if true;
     }
   }
 }

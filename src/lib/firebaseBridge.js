@@ -142,30 +142,34 @@ export const firebaseBridge = {
   async updatePhoto(id, patch) {
     cache.photos = cache.photos.map((p) => (p.id === id ? { ...p, ...patch } : p))
     emit()
-    try { await firebaseStore.updatePhoto(id, patch) } catch { /* ignore */ }
+    try { await firebaseStore.updatePhoto(id, patch) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się zaktualizować zdjęcia', id, e?.message) }
   },
   async updatePhotos(ids, patch) {
     const set = new Set(ids)
     cache.photos = cache.photos.map((p) => (set.has(p.id) ? { ...p, ...patch } : p))
     emit()
-    try { await firebaseStore.updatePhotos(ids, patch) } catch { /* ignore */ }
+    try { await firebaseStore.updatePhotos(ids, patch) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się zaktualizować zdjęć', e?.message) }
   },
   async deletePhoto(id) {
     cache.photos = cache.photos.filter((p) => p.id !== id)
     emit()
-    try { await firebaseStore.deletePhoto(id) } catch { /* ignore */ }
+    try { await firebaseStore.deletePhoto(id) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się usunąć zdjęcia', id, e?.message) }
   },
   async deletePhotos(ids) {
     const set = new Set(ids)
     cache.photos = cache.photos.filter((p) => !set.has(p.id))
     emit()
-    try { await firebaseStore.deletePhotos(ids) } catch { /* ignore */ }
+    try { await firebaseStore.deletePhotos(ids) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się usunąć zdjęć', e?.message) }
   },
 
   /* -------------------- ZDANIA -------------------- */
   listSentences: () => cache.sentences,
   async addSentence(s) {
-    const temp = { id: tmpId(), ...s, at: Date.now() }
+    const temp = { id: tmpId(), ...s, round: s.round || 1, at: Date.now() }
     cache.sentences = [temp, ...cache.sentences]
     emit()
     try {
@@ -176,18 +180,21 @@ export const firebaseBridge = {
     } catch (e) {
       cache.sentences = cache.sentences.filter((x) => x.id !== temp.id)
       emit()
+      console.warn('⚠️ Firebase: nie udało się dodać zdania', e?.message)
       throw e
     }
   },
   async updateSentence(id, patch) {
     cache.sentences = cache.sentences.map((s) => (s.id === id ? { ...s, ...patch } : s))
     emit()
-    try { await firebaseStore.updateSentence(id, patch) } catch { /* ignore */ }
+    try { await firebaseStore.updateSentence(id, patch) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się zaktualizować zdania', id, e?.message) }
   },
   async deleteSentence(id) {
     cache.sentences = cache.sentences.filter((s) => s.id !== id)
     emit()
-    try { await firebaseStore.deleteSentence(id) } catch { /* ignore */ }
+    try { await firebaseStore.deleteSentence(id) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się usunąć zdania', id, e?.message) }
   },
 
   /* -------------------- GRA -------------------- */

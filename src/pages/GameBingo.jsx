@@ -5,6 +5,7 @@ import { confettiBurst } from '../lib/confetti.js'
 import { Button, Card, BackLink, Badge } from '../components/ui.jsx'
 
 const N = 5
+const SAVE_KEY = 'd10.bingo.v1'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -30,6 +31,18 @@ function buildCard() {
   return grid
 }
 
+/** Bezpieczny odczyt/zapis planszy (localStorage z try/catch — przetrwa odświeżenie). */
+function loadBoard() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch { /* ignore */ }
+  return null
+}
+function saveBoard(board) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(board)) } catch { /* ignore */ }
+}
+
 function checkWin(grid, marked) {
   let lines = 0
   for (let r = 0; r < N; r++) if (grid[r].every((_, c) => marked.has(`${r}-${c}`))) lines++
@@ -41,38 +54,59 @@ function checkWin(grid, marked) {
   return lines
 }
 
+/**
+ * BINGO KLUBOWE — plansza jest ZAPISYWANA (przetrwa odświeżenie strony).
+ * Możesz skreślać i zbierać kolejne linie przez cały czas na tej samej planszy.
+ * Wyzerowanie następuje TYLKO przyciskiem „Nowa karta".
+ */
 export default function GameBingo() {
   const myName = store.getNickname()
-  const [grid, setGrid] = useState(() => buildCard())
-  const [marked, setMarked] = useState(() => new Set(['2-2'])) // FREE od startu
-  const [won, setWon] = useState(false)
-  const [lines, setLines] = useState(0)
-  const [isRecord, setIsRecord] = useState(false)
+  const [state, setState] = useState(() => {
+    const saved = loadBoard()
+    if (saved && saved.grid) {
+      return {
+        grid: saved.grid,
+        marked: new Set(saved.marked || []),
+        lines: saved.lines || 0,
+        lastRecorded: saved.lastRecorded || 0,
+      }
+    }
+    const board = { grid: buildCard(), marked: ['2-2'], lines: 0, lastRecorded: 0 }
+    saveBoard({ ...board, marked: [...board.marked] })
+    return { grid: board.grid, marked: new Set(['2-2']), lines: 0, lastRecorded: 0 }
+  })
+
+  const persist = (next) => {
+    setState(next)
+    saveBoard({ grid: next.grid, marked: [...next.marked], lines: next.lines, lastRecorded: next.lastRecorded })
+  }
 
   const toggle = (r, c) => {
-    if (won) return
-    if (grid[r][c].free) return
-    const next = new Set(marked)
+    if (state.grid[r][c].free) return
+    const next = new Set(state.marked)
     const key = `${r}-${c}`
     if (next.has(key)) next.delete(key)
     else next.add(key)
-    setMarked(next)
-    const l = checkWin(grid, next)
-    if (l > 0) {
-      setLines(l)
-      setWon(true)
-      recordGame({ game: 'bingo', author: myName, score: l, max: 12, timeMs: 0, better: 'high' })
-        .then((r) => setIsRecord(r.isRecord))
-      confettiBurst({ count: 180 })
+    const l = checkWin(state.grid, next)
+
+    if (l > state.lines) {
+      // Nowa ukończona linia (lub więcej) → confetti + zapis do rankingu
+      confettiBurst({ count: 120 + l * 40 })
+      if (l > state.lastRecorded) {
+        recordGame({ game: 'bingo', author: myName, score: l, max: 12, timeMs: 0, better: 'high' })
+        persist({ ...state, marked: next, lines: l, lastRecorded: l })
+        return
+      }
     }
+    persist({ ...state, marked: next, lines: l })
   }
 
   const newCard = () => {
-    setGrid(buildCard())
-    setMarked(new Set(['2-2']))
-    setWon(false)
-    setLines(0)
+    const grid = buildCard()
+    persist({ grid, marked: new Set(['2-2']), lines: 0, lastRecorded: 0 })
   }
+
+  const { grid, marked, lines } = state
 
   return (
     <div className="space-y-4">
@@ -82,7 +116,8 @@ export default function GameBingo() {
         <Button variant="ghost" className="w-auto px-3 py-2 text-sm" onClick={newCard}>Nowa karta</Button>
       </div>
       <p className="text-sm text-muted">
-        Skreślaj hasła, które widzisz (lub słyszysz) podczas zjazdu. Pierwsza pełna linia = BINGO! 🎉
+        Skreślaj hasła, które widzisz (lub słyszysz) podczas zjazdu. Plansza jest zapisywana — możesz
+        wracać do niej nawet po odświeżeniu strony. Zero linii dopiero po kliknięciu <b className="text-gold">„Nowa karta"</b>.
       </p>
 
       <Card className="!p-3">
@@ -112,14 +147,20 @@ export default function GameBingo() {
         </div>
       </Card>
 
-      {won && (
+      {lines > 0 && (
         <Card className="pop border-gold/50 text-center">
           <div className="text-4xl">🎉 BINGO!</div>
-          <p className="mt-1 text-sm text-muted">Ukończyłeś {lines} {lines === 1 ? 'linię' : lines < 5 ? 'linie' : 'linii'}.</p>
-          {isRecord && <Badge tone="green" className="mt-2">🏆 Nowy rekord!</Badge>}
-          <Button className="mt-3" onClick={newCard}>Nowa karta</Button>
+          <p className="mt-1 text-sm text-muted">
+            Ukończyłeś {lines} {lines === 1 ? 'linię' : lines < 5 ? 'linie' : 'linii'} — możesz grać dalej
+            na tej samej planszy i zbierać kolejne!
+          </p>
+          <Button className="mt-3" variant="ghost" onClick={newCard}>Zacznij nową kartę</Button>
         </Card>
       )}
+
+      <p className="text-center text-xs text-muted">
+        Ukończone linie: <b className="text-gold">{lines}</b> • Twoja plansza jest bezpieczna na tym urządzeniu.
+      </p>
     </div>
   )
 }

@@ -116,6 +116,13 @@ W aplikacji są **trzy rodzaje haseł/kluczy**: hasło wejścia dla uczestników
 > ⚠️ **Uczciwa uwaga:** aplikacja jest statyczna (GitHub Pages), więc sprawdzenie hasła odbywa się po stronie przeglądarki — ktoś bardzo zdeterminowany mógłby odczytać hasło z kodu strony. Dla jednodniowej imprezy klubowej to akceptowalna „miękka" ochrona (blokuje przypadkowych ciekawskich). Pełne bezpieczeństwo wymagałoby backendu — to już nie mieści się w budżecie 0 zł.
 > Klucze API Firebase **nie są tajne** (bezpieczeństwo zapewniają reguły w `firebase/*.rules`), ale trzymamy je w sekretach, żeby nie zaśmiecać repo.
 
+## 🎮 Nowości w grach (aktualna wersja)
+
+- **„Kto to powiedział?" — rundy:** zbiórka zdań → organizator uruchamia grę (**runda 1**) → po zakończeniu zdania zostają zapisane do rundy 1 → organizator wciska „Zbiórka" i zaczyna się **nowa runda (2)** ze świeżą zbiórką zdań. Panel admina → zakładka „Gra": przyciski Zbiórka / Aktywna / Zakończona + numer aktualnej rundy.
+- **Akceptacja zdań trwała:** zatwierdzone zdanie pozostaje zatwierdzone (po zmianie reguł — patrz wyżej).
+- **Bingo:** plansza jest **zapisywana** na urządzeniu — po odświeżeniu strony skreślenia zostają. Możesz dokreślać i zbierać kolejne linie na tej samej planszy; wyzerowanie tylko przyciskiem **„Nowa karta"**.
+- **Quiz:** baza pytań (`src/data/quiz.js`) może mieć **dowolną liczbę pytań** — każdy gracz dostaje **losowe 10** z bazy.
+
 ## 🔥 Podłączanie Firebase — krok po kroku (ważne!)
 
 Aplikacja w trybie `'firebase'` działa na **Firestore** (dane tekstowe) + **Firebase Storage** (zdjęcia). Poniżej komplet instrukcji — co zrobić w konsoli Firebase, jakie pliki wgrać i w jakie miejsce.
@@ -152,7 +159,8 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abc...
 ### Krok 6 — Wgraj reguły bezpieczeństwa (2 pliki, 2 miejsca w konsoli)
 10. **Firestore → zakładka „Rules"** → skopiuj zawartość pliku **`firebase/firestore.rules`** → wklej w edytor → **„Publikuj"**.
 11. **Storage → zakładka „Rules"** → skopiuj zawartość pliku **`firebase/storage.rules`** → wklej → **„Publikuj"**.
-12. ⚠️ W obu plikach zmień **`DZISIEJSZY-TAJNY-KLUCZ-ZMIEN-MNIE`** na swój długi sekret admina (ten sam, co `VITE_ADMIN_KEY`).
+
+> ⚠️⚠️ **WAŻNE:** jeśli masz już wgraną STARSZĄ wersję reguł (z funkcją `isAdmin`), to **musisz je teraz ponownie wkleić** — nowe reguły pozwalają na aktualizację zdjęć (foldery/rok) i zdań (status) z panelu organizatora. Bez tego: przeniesienie zdjęcia czy akceptacja zdania **nie zapiszą się w Firebase** (działały tylko „lokalnie", do odświeżenia). Nowe reguły ograniczają aktualizacje do bezpiecznych pól (`year`, `folder`, `caption`, `author` dla zdjęć; `status` dla zdań).
 
 > 💡 Możesz też wgrać reguły z konsoli Firebase CLI: `npm i -g firebase-tools`, `firebase login`, `firebase deploy --only firestore:rules,storage` (wymaga plików `firebase.json` + `firebase/firestore.rules` i `firebase/storage.rules` w repo). Dla jednego wydarzenia wygodniejsze jest wklejenie reguł w konsoli.
 
@@ -174,6 +182,7 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abc...
 | **„Brak konfiguracji Firebase — wypełnij .env"** | placeholdery zamiast prawdziwych danych | Krok 5: uzupełnij `.env` / sekrety GitHub |
 | **„PERMISSION_DENIED"** | reguły nie wgrane albo **nieaktualna wersja reguł** | Krok 6: wklej aktualne `firestore.rules` i `storage.rules` z repo (ważne!) |
 | **„missing or insufficient permissions" przy dodawaniu zdjęcia** | kod wysyłał do Firestore pole `status`, którego reguły nie dozwalają → zapis dokumentu odrzucony (zdjęcie w Storage, ale nie w galerii) | **naprawione w kodzie** (pole usunięte); jeśli nadal — **prześlij ponownie aktualne reguły** `firebase/firestore.rules` (Firestore → Rules) |
+| **Przeniesienie zdjęcia / akceptacja zdania działa „lokalnie", ale po odświeżeniu wraca (inni nie widzą zmiany)** | stara wersja reguł wymagała klucza admina w payloadzie, którego aplikacja nie wysyłała → update/delete były cicho odrzucane | **prześlij PONOWNIE aktualne `firebase/firestore.rules`** (Firestore → Rules → Publikuj) — nowe reguły pozwalają na bezpieczne aktualizacje z panelu |
 | **„Przekroczono czas oczekiwania…"** | zły `projectId`, brak internetu, Firebase nie odpowiada | sprawdź `VITE_FIREBASE_PROJECT_ID`, połączenie; „Spróbuj ponownie" |
 | **Aplikacja działa, ale jest pusta (0 zdjęć/zdań)** | zły `projectId` — SDK „cicho" przechodzi w tryb offline | popraw `VITE_FIREBASE_PROJECT_ID` i przebuduj |
 | **Po odświeżeniu wraca ekran logowania** | stan `entered` inicjalizowany przed załadowaniem danych z Firebase | **naprawione** — stan synchronizuje się po załadowaniu danych; upewnij się, że masz najnowszy build |

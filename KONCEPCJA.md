@@ -217,6 +217,7 @@ Rankingi: w trybie demo lokalne (per urządzenie), w trybie Firebase wspólne (k
 Każdy uczestnik dodaje **jedno prawdziwe, nieoczywiste/zabawne zdanie** o sobie. Potem wszyscy zgadują, kto co napisał. Gra działa, nawet jeśli ktoś **nie dodał zdania** — gra wszystkimi zdaniami innych.
 
 ### Faza 1 — zbiórka zdań (`/kto`, status gry: `collect`)
+- **Rundy:** każda rozgrywka to osobna runda. Zbiórka → Aktywna (runda N) → Zakończona (zdania zapisane do rundy N) → ponowna Zbiórka zaczyna rundę N+1 ze świeżą pulą zdań. Zdania mają pole `round`; gra i panele filtrują po aktualnej rundzie.
 - Formularz: pseudonim (prefill z nicku) + zdanie 10–160 znaków; licznik znaków.
 - Walidacja: długość, lista zakazanych słów, **honeypot** (niewidoczne pole dla botów).
 - **Jedno zdanie na urządzenie** — po dodaniu formularz znika; status zdania widoczny (oczekuje / w grze / odrzucone + możliwość ponowienia).

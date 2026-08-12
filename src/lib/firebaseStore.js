@@ -110,11 +110,14 @@ export const firebaseStore = {
   async updatePhoto(id, patch) {
     await ensure()
     const fs = await import('firebase/firestore')
-    await fs.updateDoc(fs.doc(db, 'zdjecia', id), { ...patch, moderatedAt: fs.serverTimestamp() })
+    // Uwaga: NIE dodawaj tu dodatkowych pól (np. moderatedAt) — reguły firestore.rules
+    // dla update pozwalają zmieniać TYLKO: year, folder, caption, author.
+    // Wcześniej moderatedAt blokowało zapis → "przeniesienie" nie dochodziło do Firebase.
+    await fs.updateDoc(fs.doc(db, 'zdjecia', id), patch)
   },
   async updatePhotos(ids, patch) {
     const fs = await import('firebase/firestore')
-    await Promise.all(ids.map((id) => this.updatePhoto(id, patch).catch(() => {})))
+    await Promise.all(ids.map((id) => this.updatePhoto(id, patch).catch((e) => console.warn('updatePhotos', id, e.message))))
   },
   async deletePhoto(id) {
     await ensure()
@@ -122,7 +125,7 @@ export const firebaseStore = {
     await fs.deleteDoc(fs.doc(db, 'zdjecia', id))
   },
   async deletePhotos(ids) {
-    await Promise.all(ids.map((id) => this.deletePhoto(id).catch(() => {})))
+    await Promise.all(ids.map((id) => this.deletePhoto(id).catch((e) => console.warn('deletePhotos', id, e.message))))
   },
 
   /* -------------------- ZDANIA -------------------- */
@@ -133,17 +136,26 @@ export const firebaseStore = {
     const snap = await fs.getDocs(q)
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   },
-  async addSentence({ author, text }) {
+  async addSentence({ author, text, round }) {
     await ensure()
     const fs = await import('firebase/firestore')
-    const doc = { author, text, deviceId: localStorage.getItem('d10.deviceId'), status: 'pending', at: fs.serverTimestamp() }
+    // Pola zgodne z firestore.rules (create): author, text, deviceId, round, status, at
+    const doc = {
+      author,
+      text,
+      deviceId: localStorage.getItem('d10.deviceId'),
+      round: round || 1,
+      status: 'pending',
+      at: fs.serverTimestamp(),
+    }
     const ref = await fs.addDoc(fs.collection(db, 'zdania'), doc)
     return { id: ref.id, ...doc }
   },
   async updateSentence(id, patch) {
     await ensure()
     const fs = await import('firebase/firestore')
-    await fs.updateDoc(fs.doc(db, 'zdania', id), { ...patch, moderatedAt: fs.serverTimestamp() })
+    // Reguły pozwalają zmieniać TYLKO pole status (bez moderatedAt!).
+    await fs.updateDoc(fs.doc(db, 'zdania', id), patch)
   },
   async deleteSentence(id) {
     await ensure()

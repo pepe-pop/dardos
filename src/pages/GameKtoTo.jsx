@@ -18,8 +18,8 @@ function shuffle(arr) {
   return a
 }
 
-/* ================= FAZA 1: ZBIERANIE ZDAŃ ================= */
-function CollectForm() {
+/* ================= FAZA 1: ZBIERANIE ZDAŃ (aktualna runda) ================= */
+function CollectForm({ round }) {
   const myName = store.getNickname()
   const { openNickname } = useApp()
   const [name, setName] = useState(myName)
@@ -40,7 +40,7 @@ function CollectForm() {
     if (t.length > FEATURES.maxSentenceLen) return setErr(`Maksymalnie ${FEATURES.maxSentenceLen} znaków (masz ${t.length}).`)
     if (BANNED.some((w) => t.toLowerCase().includes(w))) return setErr('Treść nie przeszła automatycznej weryfikacji — spróbuj inaczej sformułować.')
     store.setNickname(name)
-    store.addSentence({ author: name.trim(), text: t })
+    store.addSentence({ author: name.trim(), text: t, round })
     setSent(true)
   }
 
@@ -49,7 +49,7 @@ function CollectForm() {
       <Card className="border-verdant/40 text-center">
         <div className="text-3xl">✅</div>
         <p className="mt-1 font-bold">Twoje zdanie trafiło do organizatora!</p>
-        <p className="mt-1 text-sm text-muted">Pojawi się w grze po akceptacji. Zaproś innych do dodania zdań!</p>
+        <p className="mt-1 text-sm text-muted">Pojawi się w tej rundzie po akceptacji. Zaproś innych do dodania zdań!</p>
       </Card>
     )
   }
@@ -94,20 +94,22 @@ function CollectForm() {
   )
 }
 
-/* ================= FAZA 2/3: ROZGRYWKA ================= */
-function PlayGame() {
+/* ================= FAZA 2/3: ROZGRYWKA (aktualna runda) ================= */
+function PlayGame({ round }) {
   const myName = store.getNickname()
   const myDevice = deviceId()
 
   // Tala pytań budowana RAZ przy wejściu do rozgrywki (stabilna w trakcie gry)
   const [deck] = useState(() => {
-    const approved = store.listSentences().filter((s) => s.status === 'approved')
+    const approved = store
+      .listSentences()
+      .filter((s) => (s.round || 1) === round && s.status === 'approved')
     let d = approved.filter((s) => s.deviceId !== myDevice)
     if (d.length === 0) d = approved // ktoś bez zdania — gra wszystkimi
     return shuffle(d)
   })
   const mySentenceInGame = useMemo(
-    () => store.listSentences().some((s) => s.deviceId === myDevice && s.status === 'approved'),
+    () => store.listSentences().some((s) => s.deviceId === myDevice && (s.round || 1) === round && s.status === 'approved'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
@@ -156,7 +158,7 @@ function PlayGame() {
     return (
       <Card className="text-center">
         <div className="text-3xl">⏳</div>
-        <p className="mt-1 font-bold">Za mało zdań do gry.</p>
+        <p className="mt-1 font-bold">Za mało zdań w tej rundzie.</p>
         <p className="mt-1 text-sm text-muted">Organizator uruchomi grę, gdy zbierze się ich wystarczająco dużo.</p>
       </Card>
     )
@@ -168,7 +170,7 @@ function PlayGame() {
         <div className="text-3xl">🎭</div>
         <h3 className="mt-1 text-lg font-extrabold">Kto to powiedział?</h3>
         <p className="mt-1 text-sm text-muted">
-          {deck.length} zdań od klubowiczów. Zgadnij, do kogo należą! Im szybciej i trafniej — tym wyżej w rankingu.
+          {deck.length} zdań od klubowiczów (runda {round}). Zgadnij, do kogo należą! Im szybciej i trafniej — tym wyżej w rankingu.
           {mySentenceInGame && <span> Twojego zdania nie ma w zestawie — grałbyś w ciemno. 😉</span>}
         </p>
         <Button className="mt-4" onClick={start}>Zaczynamy!</Button>
@@ -227,7 +229,7 @@ function PlayGame() {
       </div>
 
       <Card className="rise text-center">
-        <p className="text-xs font-bold uppercase tracking-widest text-gold">Kto to powiedział?</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-gold">Kto to powiedział? • runda {round}</p>
         <p className="mt-3 text-lg font-bold leading-snug">„{q.text}"</p>
       </Card>
 
@@ -265,21 +267,28 @@ export default function GameKtoTo() {
   const myName = store.getNickname()
   const { openNickname } = useApp()
   const game = store.getGameStatus()
+  const round = game.round || 1
   const sentences = store.listSentences()
-  const approved = sentences.filter((s) => s.status === 'approved')
-  const pending = sentences.filter((s) => s.status === 'pending')
+  const roundSentences = sentences.filter((s) => (s.round || 1) === round)
+  const approved = roundSentences.filter((s) => s.status === 'approved')
+  const pending = roundSentences.filter((s) => s.status === 'pending')
   const myDevice = deviceId()
-  const mySentence = sentences.find((s) => s.deviceId === myDevice)
+  const mySentence = roundSentences.find((s) => s.deviceId === myDevice)
 
   const results = store.listResults().filter((r) => r.game === 'kto')
   const top = [...results].sort((b, a) => a.score - b.score || (a.timeMs || 0) - (b.timeMs || 0)).slice(0, 10)
 
   const active = game.status === 'active'
+  const closed = game.status === 'closed'
+  const collecting = game.status === 'collect'
 
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-black">Kto to powiedział? 🎭</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-black">Kto to powiedział? 🎭</h1>
+          <Badge tone={active ? 'green' : 'gold'}>Runda {round}</Badge>
+        </div>
         <p className="mt-1 text-sm text-muted">
           Każdy dodaje jedno prawdziwe, zabawne zdanie o sobie — reszta zgaduje, kto je napisał.
         </p>
@@ -295,22 +304,32 @@ export default function GameKtoTo() {
       {/* status zbiórki */}
       <Card>
         <div className="flex items-center justify-between">
-          <Badge tone={active ? 'green' : 'gold'}>{active ? 'Gra AKTYWNA' : 'Trwa zbiórka zdań'}</Badge>
+          <Badge tone={active ? 'green' : closed ? 'muted' : 'gold'}>
+            {active ? 'Gra AKTYWNA' : closed ? `Runda ${round} zakończona` : 'Trwa zbiórka zdań'}
+          </Badge>
           <span className="text-xs font-bold text-muted">{approved.length}/{game.minSentences} zdań</span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
           <div className="h-full rounded-full bg-verdant transition-all" style={{ width: `${Math.min(100, (approved.length / game.minSentences) * 100)}%` }} />
         </div>
-        {!active && (
+        {collecting && (
           <p className="mt-2 text-xs text-muted">
-            Gra ruszy, gdy zbierzemy {game.minSentences} zatwierdzonych zdań lub gdy uruchomi ją organizator.
+            Zbiórka do <b className="text-cream">rundy {round}</b>. Gra ruszy, gdy zbierzemy {game.minSentences} zatwierdzonych zdań lub gdy uruchomi ją organizator.
             {pending.length > 0 && ' Czekają na akceptację — poinformuj organizatora.'}
+          </p>
+        )}
+        {active && (
+          <p className="mt-2 text-xs text-muted">Trwa rozgrywka rundy {round} — powodzenia! 🎯</p>
+        )}
+        {closed && (
+          <p className="mt-2 text-xs text-muted">
+            Zdania z tej rundy są już zapisane. Organizator wkrótce otworzy zbiórkę do kolejnej rundy.
           </p>
         )}
       </Card>
 
-      {/* moje zdanie */}
-      {myName && !active && !mySentence && <CollectForm />}
+      {/* moje zdanie / formularz */}
+      {myName && collecting && !mySentence && <CollectForm round={round} />}
       {myName && mySentence && mySentence.status === 'pending' && (
         <Card className="text-center">
           <div className="text-2xl">⏳</div>
@@ -321,7 +340,7 @@ export default function GameKtoTo() {
       {myName && mySentence && mySentence.status === 'approved' && (
         <Card className="border-verdant/30 text-center">
           <div className="text-2xl">✅</div>
-          <p className="mt-1 font-bold">Twoje zdanie jest już w grze!</p>
+          <p className="mt-1 font-bold">Twoje zdanie jest już w grze (runda {round})!</p>
           <p className="mt-1 text-xs text-muted">„{mySentence.text}"</p>
         </Card>
       )}
@@ -338,7 +357,7 @@ export default function GameKtoTo() {
       {active && (
         <div>
           <SectionTitle title="Rozgrywka" sub={myName ? `Grasz jako ${myName}` : 'Ustaw pseudonim, aby zapisać wynik'} />
-          {myName ? <PlayGame /> : (
+          {myName ? <PlayGame round={round} /> : (
             <Card className="text-center">
               <p className="text-sm text-muted">Bez pseudonimu nie zapiszesz wyniku do rankingu.</p>
               <Button className="mt-3" variant="outline" onClick={openNickname}>Ustaw pseudonim</Button>

@@ -160,13 +160,14 @@ export const localStore = {
   listSentences() {
     return read(K.sentences, [])
   },
-  addSentence({ author, text }) {
+  addSentence({ author, text, round }) {
     const list = read(K.sentences, [])
     const s = {
       id: uid(),
       author: (author || '').trim().slice(0, 30),
       text: (text || '').trim(),
       deviceId: deviceId(),
+      round: round || 1,
       status: 'pending',
       at: Date.now(),
     }
