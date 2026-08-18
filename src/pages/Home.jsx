@@ -14,6 +14,28 @@ function useNow(ms = 1000) {
   return n
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Bezpieczne odczyty ze store.
+   UWAGA: stary (asynchroniczny) store zwracał Promise zamiast
+   wartości — React nie umie wyrenderować Promise/obiektu i rzuca
+   "Minified React error #31". Te helpery gwarantują, że do JSX
+   trafiają WYŁĄCZNIE stringi/liczby.
+   ───────────────────────────────────────────────────────────── */
+function asStr(v) {
+  return typeof v === 'string' ? v : ''
+}
+function asNum(v) {
+  return typeof v === 'number' && !Number.isNaN(v) ? v : 0
+}
+/** Zwraca obiekt ustawień TYLKO jeśli to zwykły obiekt (nigdy Promise). */
+function safeSettings() {
+  try {
+    const raw = typeof store.getSettings === 'function' ? store.getSettings() : null
+    if (raw && typeof raw === 'object' && !Array.isArray(raw) && typeof raw.then !== 'function') return raw
+  } catch { /* ignore */ }
+  return {}
+}
+
 function Countdown({ target }) {
   const now = useNow()
   const diff = target - now
@@ -28,7 +50,7 @@ function Countdown({ target }) {
     return (
       <Card className="pulse-gold border-gold/40 text-center">
         <div className="text-2xl">🎉</div>
-      	<div className="mt-1 font-extrabold text-gold">PeKaeS dzisiaj do spodu</div>
+        <div className="mt-1 font-extrabold text-gold">PeKaeS dzisiaj do spodu</div>
         <p className="mt-1 text-sm text-muted">Bawimy się do rana ooo.</p>
       </Card>
     )
@@ -54,42 +76,71 @@ function Countdown({ target }) {
   )
 }
 
-/** Wyróżniony film na stronie głównej. Wybór: ustawienia (panel admina) > CLUB.featuredVideo. */
+/** Wyróżniony film na stronie głównej. Wybór: ustawienia (panel admina) > CLUB.featuredVideo.
+ *  W pełni zabezpieczony — do JSX trafiają tylko stringi (nigdy obiekt/Promise). */
 function FeaturedVideo() {
-  const photos = store.listPhotos()
-  const settings = store.getSettings ? store.getSettings() : {}
-  const featuredId = (settings && settings.featuredVideoId) || CLUB.featuredVideo
-  const video = featuredId
-    ? photos.find((p) => p.type === 'video' && p.id === featuredId)
-    : null
+  // 1) ID wyróżnionego filmu (tylko string; ustawienia mogą być Promise/obiektem/null)
+  let featuredId = ''
+  try {
+    const settings = safeSettings()
+    const fromSettings = asStr(settings.featuredVideoId)
+    featuredId = fromSettings || asStr(CLUB.featuredVideo)
+  } catch {
+    featuredId = asStr(CLUB.featuredVideo)
+  }
+  if (!featuredId) return null
+
+  // 2) znajdź film w galerii (photos może być tablicą albo Promise — sprawdzamy)
+  let video = null
+  try {
+    const photos = typeof store.listPhotos === 'function' ? store.listPhotos() : []
+    if (Array.isArray(photos)) {
+      video = photos.find((p) => p && p.type === 'video' && String(p.id) === featuredId) || null
+    }
+  } catch {
+    video = null
+  }
   if (!video) return null
+
+  // 3) do JSX wchodzą WYŁĄCZNIE stringi — to eliminuje błąd #31
+  const caption = asStr(video.caption)
+  const author = asStr(video.author)
+  const year = asStr(video.year)
+  const src = asStr(video.src)
+  const poster = asStr(video.poster)
+  const key = asStr(video.id) || 'featured-video'
+
   return (
     <section className="overflow-hidden rounded-3xl border border-verdant/30 bg-panel">
       <div className="flex items-center justify-between px-4 pt-3">
         <span className="text-xs font-black uppercase tracking-widest text-verdant">🎬 Film zjazdu</span>
-        {video.caption && <span className="truncate pl-3 text-xs text-muted">{video.caption}</span>}
+        {caption && <span className="truncate pl-3 text-xs text-muted">{caption}</span>}
       </div>
       <video
-        key={video.id}
-        src={video.src}
-        poster={video.poster || undefined}
+        key={key}
+        src={src}
+        poster={poster || undefined}
         controls
         preload="metadata"
         playsInline
         className="mt-2 w-full bg-black"
       />
       <p className="px-4 pb-3 pt-1 text-[11px] text-muted">
-        {video.author} • {video.year}
+        {author} • {year}
       </p>
     </section>
   )
 }
 
 export default function Home() {
-  const name = store.getNickname()
-  const count = store.countParticipants()
   const { openNickname } = useApp()
   const target = new Date(CLUB.eventDate).getTime()
+
+  // Bezpieczne odczyty: nigdy Promise/obiekt w JSX (React #31)
+  let name = ''
+  try { name = asStr(typeof store.getNickname === 'function' ? store.getNickname() : '') } catch { name = '' }
+  let count = 0
+  try { count = asNum(typeof store.countParticipants === 'function' ? store.countParticipants() : 0) } catch { count = 0 }
 
   // licznik uczestników: jedna wizyta = jedna "rejestracja" (po urządzeniu);
   // w trybie firebase licznik odświeżany co 30 s z bazy (refreshParticipants)
