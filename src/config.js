@@ -29,7 +29,7 @@ export const CLUB = {
 export const FEATURES = {
   /** 'local'  = demo bez backendu (localStorage) — działa od razu, zero konfiguracji
    *  'firebase' = produkcja (Firestore + Storage) — wymaga sekretów w .env / GitHub Secrets */
-  storageMode: 'local',
+  storageMode: 'firebase',
 
   /** 🔐 Hasło wejścia do aplikacji dla UCZESTNIKÓW (inne niż klucz admina!).
    *  Ustaw w .env: VITE_APP_PASSWORD=twoje-tajne-haslo */
