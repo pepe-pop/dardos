@@ -243,7 +243,7 @@ export const QUIZ = [
     "options": ["Russ Bray", "George Noble", "Kirk Bevins", "Paul Hinks"],
     "correct": 1,
     "fun": "Russ Bray (znany jako „The Voice”) sędziował najważniejsze finały PDC przez dekady i zakończył karierę sędziego scenicznego w 2024 roku."
-  },
+  }
 ]
 
 /** Memory — pary symboli (emoji). Możesz podmienić na zdjęcia członków. */
@@ -292,5 +292,5 @@ export const BINGO_POOL = [
 'Ktoś chwali się zbieraniem szlifów na „warszawskich obiektach”',
 'Nocne debaty o sensie życia',
 'Wbicie lotki typu „Robin Hood” (lotka w piórko drugiej lotki)',
-'Planowanie kolejnego turnieju, zanim ten wyjazd się w ogóle skończy,
+'Planowanie kolejnego turnieju, zanim ten wyjazd się w ogóle skończy'
 ]
