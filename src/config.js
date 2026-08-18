@@ -23,7 +23,7 @@ export const CLUB = {
    *  Wpisz tu ID dokumentu filmu z galerii (np. '2026-zjazd-caly'),
    *  ALBO zostaw puste i wybierz film w panelu administratora (Zdjęcia → „Film na start").
    *  Priorytet ma wybór z panelu admina. */
-  featuredVideo: '',
+  featuredVideo: '2026-KRZYSIO.mp4',
 };
 
 export const FEATURES = {
