@@ -4,31 +4,25 @@
  * Format: jeden obiekt na rok. Pola: title, text, facts[], quote (opcjonalnie).
  */
 export const TIMELINE = [
-  {
-    year: 2015,
-    title: 'Powstanie klubu',
-    text: 'Grupa znajomych z lokalnego pubu zakłada klub darta. Pierwsza tarcza wisi do dziś [EDYTUJ — dodaj prawdziwą historię].',
-    facts: ['Pierwszy trening: poniedziałek, 19:00', 'Skład założycielski: 6 osób'],
-    quote: '„Zaczęło się od piwa i jednej lotki..."',
-  },
+
   {
     year: 2016,
-    title: 'Pierwszy sezon ligowy',
-    text: 'Debiut w lidze okręgowej. Nie wygraliśmy wiele, ale nikt nie miał do nas pretensji — liczyło się, że gramy [EDYTUJ].',
-    facts: ['10 meczów, 2 zwycięstwa'],
+    title: 'Założenie PeKaeSu',
+    text: '4 ojców założycieli postanawia sformalizować picie browarów i zawiązuje Piwniczny Klub Sportowy',
+    
   },
   {
     year: 2017,
-    title: 'Własna siedziba',
-    text: 'Klub dostaje stały kącik dartowy. Pojawiają się pierwsze koszulki klubowe [EDYTUJ].',
-    facts: ['Powstaje logo klubu'],
+    title: 'Pierwsze sukcesy',
+    text: 'Reprezentacja PeKaeSu w składzie Jakub Sak, Kacper Moczarski i Wiktor Nurzyński wyrusza do Warszawy i podbija Mistrzostwa Polski Juniorów',
+    facts: ['Saku zdobył x miejsce, Moczar zdobył x miejsce'],
   },
   {
     year: 2018,
-    title: 'Pierwszy tytuł',
-    text: 'Zwycięstwo w turnieju [nazwa] — pierwszy puchar w gablocie [EDYTUJ].',
-    facts: ['Puchar + statuetka MVP'],
-    quote: '„Graliśmy jak nigdy. Wszyscy w to wierzyliśmy."',
+    title: 'Pierwsze wspólne święta',
+    text: 'Pierwszy raz spotkaliśmy się w składzie 13 osób na barszczyk u Kuby',
+    facts: ['pyszny barszczyk, pyszne uszka'],
+
   },
   {
     year: 2019,
@@ -72,6 +66,14 @@ export const TIMELINE = [
     text: 'Dziesięć lat darta, przyjaźni i wspólnych historii. Czas na wielki zjazd jubileuszowy! 🎉',
     facts: ['To Wy pisaliście tę historię'],
     quote: '„Najważniejsze nie są wyniki, tylko ludzie przy tarczy."',
+  },
+
+  {
+    year: 2026,
+    title: '10 lat!',
+    text: 'Dziesięć lat darta, przyjaźni i wspólnych historii. Czas na wielki zjazd jubileuszowy! 🎉',
+    facts: ['To Wy pisaliście tę historię'],
+    quote: '„Najważniejsze nie są wyniki, tylko ludzie których ten SPORT połączył."',
   },
 ]
 

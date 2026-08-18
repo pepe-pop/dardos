@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "qr": "node scripts/make-qr.mjs",
-    "bulk-upload": "node scripts/bulk-upload.mjs"
+    "bulk-upload": "node scripts/bulk-upload.mjs",
+    "bulk-upload-videos": "node scripts/bulk-upload-videos.mjs"
   },
   "dependencies": {
     "firebase": "^12.17.1",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "@vitejs/plugin-react": "^4.4.1",
+    "ffmpeg-static": "^5.3.0",
     "firebase-admin": "^13.10.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.3",

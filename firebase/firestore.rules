@@ -19,14 +19,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ---------- ZDJĘCIA ----------
-    // create: każdy może dodać, ale DOKŁADNIE pola: author, caption, year, folder, src, thumb, at.
-    // update: tylko porządkowanie (year, folder, caption, author) — nie da się podmienić src/thumb.
+    // ---------- ZDJĘCIA I FILMY ----------
+    // create: każdy może dodać, ale DOKŁADNIE pola:
+    //   author, caption, year, folder, src, thumb, poster, type, at.
+    //   type: 'image' | 'video' (film ma dodatkowo poster = miniaturkę).
+    // update: tylko porządkowanie (year, folder, caption, author) — nie da się podmienić src/poster.
     // delete: dozwolone (usuwanie z panelu organizatora).
     match /zdjecia/{id} {
       allow read: if true;
       allow create: if
-        request.resource.data.keys().hasOnly(['author', 'caption', 'year', 'folder', 'src', 'thumb', 'at'])
+        request.resource.data.keys().hasOnly(['author', 'caption', 'year', 'folder', 'src', 'thumb', 'poster', 'type', 'at'])
         && request.resource.data.author is string
         && request.resource.data.author.size() >= 2
         && request.resource.data.author.size() <= 40
@@ -37,6 +39,8 @@ service cloud.firestore {
         && request.resource.data.folder is string
         && request.resource.data.folder.size() >= 2
         && request.resource.data.folder.size() <= 60
+        && request.resource.data.type is string
+        && request.resource.data.type in ['image', 'video']
         && request.resource.data.src is string;
       allow update: if
         request.resource.data.diff().affectedKeys().hasOnly(['year', 'folder', 'caption', 'author']);

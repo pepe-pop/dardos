@@ -9,7 +9,7 @@
  */
 export const CLUB = {
   name: 'PeKaeS x PeKaeSsa',          // TODO: pełna nazwa klubu
-  shortName: 'DADOS',                // TODO: skrót / logo
+  shortName: 'DARDOS',                // TODO: skrót / logo
   city: 'Zamość',
   foundedYear: 2016,
   eventDate: '2026-08-21T15:00:00+02:00', // TODO: data i godzina zjazdu (format ISO)
@@ -18,6 +18,12 @@ export const CLUB = {
   /** Domyślny folder, do którego trafiają zdjęcia dodane przez uczestników
    *  (tylko administrator może przenieść je do innych folderów). */
   jubileeFolder: 'X-lecie PeKaeS',
+
+  /** 🎬 Film wyróżniony na stronie głównej („Film zjazdu").
+   *  Wpisz tu ID dokumentu filmu z galerii (np. '2026-zjazd-caly'),
+   *  ALBO zostaw puste i wybierz film w panelu administratora (Zdjęcia → „Film na start").
+   *  Priorytet ma wybór z panelu admina. */
+  featuredVideo: '',
 };
 
 export const FEATURES = {

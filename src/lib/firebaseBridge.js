@@ -23,6 +23,7 @@ const cache = {
   sentences: [],
   results: [],
   game: { status: 'collect', minSentences: 6 },
+  settings: {},
   participants: 0,
 }
 
@@ -65,18 +66,20 @@ export async function loadAll(timeoutMs = 12000) {
         firebaseStore.listSentences(),
         firebaseStore.listResults(),
         firebaseStore.getGameStatus(),
+        firebaseStore.getSettings(),
         firebaseStore.countParticipants(),
       ]),
       timeoutMs,
       'Przekroczono czas oczekiwania na odpowiedź Firebase (12 s). Sprawdź połączenie internetowe oraz dane projektu (VITE_FIREBASE_*).'
     )
-    const [nickname, entered, photos, sentences, results, game, participants] = data
+    const [nickname, entered, photos, sentences, results, game, participants, settings] = data
     cache.nickname = nickname || ''
     cache.entered = !!entered
     cache.photos = photos || []
     cache.sentences = sentences || []
     cache.results = results || []
     cache.game = game || cache.game
+    cache.settings = settings || {}
     cache.participants = participants || 0
     emit()
     return true
@@ -203,6 +206,15 @@ export const firebaseBridge = {
     cache.game = { ...cache.game, ...patch }
     emit()
     try { await firebaseStore.setGameStatus(patch) } catch { /* ignore */ }
+  },
+
+  /* -------------------- USTAWIENIA (film na start) -------------------- */
+  getSettings: () => cache.settings,
+  async setSettings(patch) {
+    cache.settings = { ...cache.settings, ...patch }
+    emit()
+    try { await firebaseStore.setSettings(patch) }
+    catch (e) { console.warn('⚠️ Firebase: nie udało się zapisać ustawień', e?.message) }
   },
 
   /* -------------------- WYNIKI -------------------- */

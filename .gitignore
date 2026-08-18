@@ -15,3 +15,7 @@ service-account*.json
 zdjecia-bulk/
 
 qr-zjazd.png
+
+# Folder roboczy do masowego importu filmów
+filmy-bulk/
+films-manifest.csv

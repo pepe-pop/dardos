@@ -1,13 +1,42 @@
 import { useEffect, useRef, useState } from 'react'
-import { MEMORY_SYMBOLS } from '../data/quiz.js'
+import { MEMORY_SYMBOLS, MEMORY_IMAGES } from '../data/quiz.js'
 import { store, recordGame } from '../lib/store.js'
 import { confettiBurst } from '../lib/confetti.js'
 import { Button, Card, BackLink, Badge } from '../components/ui.jsx'
 
+/**
+ * Memory — obsługuje WŁASNE GRAFIKI (MEMORY_IMAGES w src/data/quiz.js) albo emoji.
+ * Karta: { key (identyfikator pary), face: {kind:'emoji', value} | {kind:'img', src} }.
+ */
 function buildDeck() {
+  if (MEMORY_IMAGES && MEMORY_IMAGES.length >= 3) {
+    const pairs = MEMORY_IMAGES.slice(0, 8).map((m, i) => ({
+      key: 'img-' + i,
+      face: { kind: 'img', src: m.src || m, label: m.label || '' },
+    }))
+    return [...pairs, ...pairs]
+      .map((c, i) => ({ id: i, ...c, up: false, done: false }))
+      .sort(() => Math.random() - 0.5)
+  }
   return [...MEMORY_SYMBOLS, ...MEMORY_SYMBOLS]
-    .map((s, i) => ({ id: i, s, up: false, done: false }))
+    .map((s, i) => ({ id: i, key: 'emoji-' + s, face: { kind: 'emoji', value: s }, up: false, done: false }))
     .sort(() => Math.random() - 0.5)
+}
+
+const PAIR_COUNT = () => (MEMORY_IMAGES && MEMORY_IMAGES.length >= 3 ? Math.min(MEMORY_IMAGES.length, 8) : MEMORY_SYMBOLS.length)
+
+function CardFace({ face, small = false }) {
+  if (face.kind === 'img') {
+    return (
+      <img
+        src={face.src}
+        alt={face.label || 'karta'}
+        loading="lazy"
+        className={`${small ? 'h-full w-full' : 'h-[calc(100%-8px)] w-[calc(100%-8px)]'} rounded-xl object-cover`}
+      />
+    )
+  }
+  return <span className={small ? 'text-xl' : 'text-3xl'}>{face.value}</span>
 }
 
 export default function GameMemory() {
@@ -48,7 +77,7 @@ export default function GameMemory() {
     if (o.length === 2) {
       setMoves((m) => m + 1)
       const [a, b] = o
-      if (deck[a].s === deck[b].s) {
+      if (deck[a].key === deck[b].key) {
         lockRef.current = true
         setTimeout(() => {
           setDeck((d) => d.map((x, i) => (i === a || i === b ? { ...x, done: true, up: false } : x)))
@@ -76,6 +105,7 @@ export default function GameMemory() {
 
   const mm = String(Math.floor(secs / 60)).padStart(2, '0')
   const ss = String(secs % 60).padStart(2, '0')
+  const pairs = PAIR_COUNT()
 
   return (
     <div className="space-y-4">
@@ -87,7 +117,10 @@ export default function GameMemory() {
           <span className="rounded-full bg-white/5 px-3 py-1 text-muted">ruchów: {moves}</span>
         </div>
       </div>
-      <p className="text-sm text-muted">Znajdź {MEMORY_SYMBOLS.length} par. Im mniej ruchów i czasu — tym lepiej.</p>
+      <p className="text-sm text-muted">
+        Znajdź {pairs} par. Im mniej ruchów i czasu — tym lepiej.
+        {MEMORY_IMAGES && MEMORY_IMAGES.length >= 3 ? ' Gra własnymi grafikami klubu! 🖼️' : ''}
+      </p>
 
       {finished && (
         <Card className="border-verdant/40 text-center">
@@ -104,7 +137,7 @@ export default function GameMemory() {
           <button
             key={c.id}
             onClick={() => flip(i)}
-            className={`grid aspect-square place-items-center rounded-2xl text-3xl transition-all duration-200 ${
+            className={`grid aspect-square place-items-center overflow-hidden rounded-2xl transition-all duration-200 ${
               c.done
                 ? 'bg-verdant/15 opacity-60'
                 : c.up
@@ -112,7 +145,7 @@ export default function GameMemory() {
                 : 'bg-panel2 border border-white/10 active:scale-95'
             }`}
           >
-            {c.up || c.done ? c.s : '🎯'}
+            {c.up || c.done ? <CardFace face={c.face} small={c.face.kind === 'img'} /> : <span className="text-3xl">🎯</span>}
           </button>
         ))}
       </div>

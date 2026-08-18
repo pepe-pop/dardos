@@ -19,6 +19,7 @@ const K = {
   sentences: 'd10.sentences',
   game: 'd10.game',
   results: 'd10.results',
+  settings: 'd10.settings',
 }
 
 // Bezpieczny zapis: gdy localStorage jest niedostępny (iframe, tryb prywatny,
@@ -116,8 +117,14 @@ export const localStore = {
     seedIfEmpty()
     return read(K.photos, [])
   },
-  /** Nowe zdjęcie od razu trafia do galerii (folder CLUB.jubileeFolder). */
-  async addPhoto({ author, caption, year, folder, dataUrl, thumbDataUrl }) {
+  /**
+   * Nowe zdjęcie/film od razu trafia do galerii (folder CLUB.jubileeFolder).
+   * type: 'image' | 'video'; dla filmu: src = URL, poster = miniaturka.
+   * Uwaga (tryb demo): plików wideo nie trzymamy w localStorage (za duże) —
+   * w trybie 'local' filmy dodajesz przez LINK (URL). W trybie 'firebase'
+   * działa też upload pliku.
+   */
+  async addPhoto({ author, caption, year, folder, dataUrl, thumbDataUrl, type = 'image', poster = '' }) {
     seedIfEmpty()
     const list = read(K.photos, [])
     const photo = {
@@ -127,12 +134,23 @@ export const localStore = {
       caption: caption || '',
       year: year || String(YEAR),
       folder: folder || CLUB.jubileeFolder,
+      type,
+      poster,
       at: Date.now(),
     }
     list.push(photo)
     write(K.photos, list)
     emit()
     return photo
+  },
+
+  /* -------------------- USTAWIENIA (film na start) -------------------- */
+  getSettings() {
+    return read(K.settings, {}) || {}
+  },
+  setSettings(patch) {
+    write(K.settings, { ...this.getSettings(), ...patch })
+    emit()
   },
   updatePhoto(id, patch) {
     const list = read(K.photos, []).map((p) => (p.id === id ? { ...p, ...patch } : p))

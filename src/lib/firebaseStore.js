@@ -33,11 +33,11 @@ async function ensure() {
 }
 
 /** Upload pliku do Storage, zwraca publiczny URL. */
-async function uploadFile(blob, path) {
+async function uploadFile(blob, path, contentType) {
   await ensure()
   const st = await import('firebase/storage')
   const ref = st.ref(storage, path)
-  const snap = await st.uploadBytes(ref, blob, { contentType: 'image/jpeg' })
+  const snap = await st.uploadBytes(ref, blob, { contentType: contentType || 'image/jpeg' })
   return st.getDownloadURL(snap.ref)
 }
 
@@ -92,18 +92,37 @@ export const firebaseStore = {
     const snap = await fs.getDocs(q)
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   },
-  async addPhoto({ author, caption, year, folder, dataUrl, thumbDataUrl }) {
+  async addPhoto({ author, caption, year, folder, dataUrl, thumbDataUrl, type = 'image', poster = '', videoBlob }) {
     await ensure()
     const fs = await import('firebase/firestore')
     const id = fs.doc(fs.collection(db, 'zdjecia')).id
-    const base = `zdjecia/${folder}`
-    const fullUrl = await uploadFile(dataUrlToBlob(dataUrl), `${base}/${id}.jpg`)
-    const thumbUrl = thumbDataUrl ? await uploadFile(dataUrlToBlob(thumbDataUrl), `${base}/${id}-thumb.jpg`) : fullUrl
     // Uwaga: ZGODNOŚĆ z regułami! firestore.rules → match /zdjecia:
-    // create pozwala na DOKŁADNIE pola: author, caption, year, folder, src, thumb, at.
+    // create pozwala na DOKŁADNIE pola: author, caption, year, folder, src, thumb, poster, type, at.
     // Nie dodawaj tu innych pól (np. status) — inaczej zapis dostanie
-    // "missing or insufficient permissions" (błąd: zdjęcie w Storage, ale nie w galerii).
-    const doc = { author, caption, year, folder, src: fullUrl, thumb: thumbUrl, at: fs.serverTimestamp() }
+    // "missing or insufficient permissions" (błąd: plik w Storage, ale nie w galerii).
+    const doc = {
+      author, caption, year, folder,
+      type, // 'image' | 'video'
+      at: fs.serverTimestamp(),
+    }
+    if (type === 'video') {
+      // Film: upload wideo do /filmy/{folder}/{id}.mp4, poster (miniaturka) do /zdjecia/{folder}/{id}-poster.jpg
+      const fullUrl = videoBlob
+        ? await uploadFile(videoBlob, `filmy/${folder}/${id}.mp4`, 'video/mp4')
+        : dataUrl // tryb "z linku" — src = podany URL
+      const posterUrl = poster
+        ? await uploadFile(dataUrlToBlob(poster), `zdjecia/${folder}/${id}-poster.jpg`)
+        : ''
+      doc.src = fullUrl
+      doc.poster = posterUrl
+      doc.thumb = posterUrl || ''
+    } else {
+      const fullUrl = await uploadFile(dataUrlToBlob(dataUrl), `zdjecia/${folder}/${id}.jpg`)
+      const thumbUrl = thumbDataUrl ? await uploadFile(dataUrlToBlob(thumbDataUrl), `zdjecia/${folder}/${id}-thumb.jpg`) : fullUrl
+      doc.src = fullUrl
+      doc.thumb = thumbUrl
+      doc.poster = ''
+    }
     await fs.setDoc(fs.doc(db, 'zdjecia', id), doc)
     return { id, ...doc }
   },
@@ -174,6 +193,19 @@ export const firebaseStore = {
     await ensure()
     const fs = await import('firebase/firestore')
     await fs.setDoc(fs.doc(db, 'ustawienia', 'gra'), patch, { merge: true })
+  },
+
+  /* -------------------- USTAWIENIA (film na start) -------------------- */
+  async getSettings() {
+    await ensure()
+    const fs = await import('firebase/firestore')
+    const snap = await fs.getDoc(fs.doc(db, 'ustawienia', 'ustawienia'))
+    return snap.exists() ? snap.data() : {}
+  },
+  async setSettings(patch) {
+    await ensure()
+    const fs = await import('firebase/firestore')
+    await fs.setDoc(fs.doc(db, 'ustawienia', 'ustawienia'), patch, { merge: true })
   },
 
   /* -------------------- WYNIKI -------------------- */

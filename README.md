@@ -92,6 +92,48 @@ Odśwież aplikację → zdjęcia są w galerii (filtry wg `folder`), a „Zgadn
 
 > 🧹 **Sprzątanie:** skrypt NIE usuwa plików z Twojego folderu. Po imporcie możesz usunąć `zdjecia-bulk/` lokalnie — kopie w Storage zostają.
 
+## 🎬 Filmy w galerii
+
+Galeria obsługuje **zdjęcia i filmy** (kafelek z plakietką ▶️, odtwarzanie w pełnym ekranie).
+
+### Dodawanie filmów — 3 sposoby
+
+1. **W aplikacji (na zjeździe):** „+ Dodaj" → zakładka **🎬 Film** → wybierz plik z telefonu (limit 150 MB; miniaturka generowana automatycznie) **albo** wklej **link do filmu mp4** (działa też w trybie demo). Uwaga: plik z telefonu działa w trybie Firebase (w demo pliki wideo nie są przechowywane).
+2. **Import z kompresją (najlepszy dla dużych archiwów):** skrypt `scripts/bulk-upload-videos.mjs` kompresuje filmy ffmpeg (H.264+AAC, ≤1280 px, CRF 27 → **~90% mniejsze**), wycina miniaturkę i wgrywa do Firebase:
+
+```bash
+npm run bulk-upload-videos -- --videos ./filmy-bulk \
+     --manifest films-manifest.csv --service-account service-account.json --dry-run   # najpierw plan
+npm run bulk-upload-videos -- --videos ./filmy-bulk \
+     --manifest films-manifest.csv --service-account service-account.json            # właściwy import
+```
+
+   Manifest jak przy zdjęciach: `filename,caption,year,folder,author` (szablon: `scripts/manifest.example.csv`). Opcje: `--scale 1280`, `--crf 27`, `--limit 5`.
+3. **Konsola Firebase** — ręczne wgranie do folderu `filmy/` + dokument w `zdjecia/` (tylko gdy wiesz, co robisz; skrypty są szybsze).
+
+> 🔒 **Reguły Storage** pozwalają na upload wideo ≤ 200 MB w ścieżce `filmy/` — po zmianie reguł **wklej ponownie** `firebase/storage.rules` (Storage → Rules).
+
+### 🎬 „Film zjazdu" na stronie głównej
+
+Na starcie aplikacji możesz wyróżnić jeden film (z odtwarzaczem). **Jak wybrać który:**
+- **Z panelu admina (najprościej):** panel `#/admin` → zakładka **Zdjęcia** → karta **„🎬 Film na stronie głównej"** → wybierz film z listy. Wybór zapisuje się w ustawieniach i obowiązuje dla wszystkich.
+- **W kodzie:** wpisz ID dokumentu filmu w `src/config.js` → `CLUB.featuredVideo` (np. `'2026-zjazd-test'`). Priorytet ma wybór z panelu admina.
+- **Jak znaleźć ID filmu:** w panelu admina na liście zdjęć/filmów kliknij film → w konsoli przeglądarki zobaczysz dokument; albo po imporcie skrypt poda ID (slug nazwy pliku). Dla filmów dodawanych w aplikacji ID jest w ustawieniach po wyborze w panelu.
+
+## 🖼️ Memory — własne grafiki
+
+Gra memory domyślnie używa emoji. Żeby zagrać **własnymi grafikami** (zdjęcia członków, logo, puchary, wydarzenia):
+1. Wrzuć pliki do katalogu **`public/memory/`** (kwadraty ~512 px: `01.jpg`, `02.jpg`, …).
+2. W **`src/data/quiz.js`** odkomentuj tablicę **`MEMORY_IMAGES`** i wypisz swoje pliki:
+   ```js
+   export const MEMORY_IMAGES = [
+     { src: './memory/01.jpg', label: 'Założyciele klubu' },
+     { src: './memory/02.jpg', label: 'Pierwszy puchar' },
+     // … min. 3 grafiki (6 kart), najlepiej 6–8 (12–16 kart)
+   ]
+   ```
+3. `npm run build` → push. Gra losuje pary z Twoich grafik; pusty `MEMORY_IMAGES` = powrót do emoji.
+
 ## QR kod
 
 ```bash

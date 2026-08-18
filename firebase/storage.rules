@@ -2,10 +2,20 @@ rules_version = '2';
 
 // ============================================================
 // REGUŁY STORAGE — zdjęcia zjazdowe
-// Wgranie: firebase deploy --only storage
+// Wgranie: Storage → zakładka „Rules" → wklej → „Publikuj".
+// ============================================================
+//
+// MODEL: aplikacja (klient) robi w Storage TYLKO upload (create) nowych zdjęć.
+// - odczyt: publiczny (galeria),
+// - upload: każdy, z limitami (JPG ≤ 5 MB),
+// - update/delete: ZABLOKOWANE — aplikacja nigdy nie zmienia ani nie usuwa
+//   plików w Storage (usuwanie zdjęcia kasuje dokument w Firestore; usuwanie
+//   plików porządkujesz w konsoli Firebase albo skryptem z kluczem serwisowym,
+//   który i tak omija reguły).
 // ============================================================
 service firebase.storage {
   match /b/{bucket}/o {
+    // ---------- ZDJĘCIA (JPG ≤ 5 MB) ----------
     match /zdjecia/{allPaths=**} {
       // Odczyt publiczny (podgląd galerii)
       allow read: if true;
@@ -14,16 +24,25 @@ service firebase.storage {
       allow create: if
         request.resource.size <= 5 * 1024 * 1024
         && request.resource.contentType.matches('image/jpeg')
-        && request.resource.contentType.matches('image/.*')
         && request.resource.name.matches('.*\\.(jpg|jpeg)$');
 
-      // Usuwanie/nadpisywanie: tylko admin
-      allow update, delete: if request.resource != null && adminToken(request);
+      // Nadpisywanie/usuwanie plików z aplikacji: ZABRONIONE.
+      allow update, delete: if false;
     }
 
-    // Funkcja pomocnicza — patrz uwaga w firestore.rules
-    function adminToken(request) {
-      return request.headers.get('x-admin-key') == 'DZISIEJSZY-TAJNY-KLUCZ-ZMIEN-MNIE';
+    // ---------- FILMY (wideo ≤ 200 MB) ----------
+    match /filmy/{allPaths=**} {
+      // Odczyt publiczny (odtwarzanie w galerii)
+      allow read: if true;
+
+      // Upload: każdy może wrzucać wideo (mp4/webm/mov) max 200 MB
+      allow create: if
+        request.resource.size <= 200 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*')
+        && request.resource.name.matches('.*\\.(mp4|webm|mov|m4v)$');
+
+      // Nadpisywanie/usuwanie z aplikacji: ZABRONIONE.
+      allow update, delete: if false;
     }
   }
 }

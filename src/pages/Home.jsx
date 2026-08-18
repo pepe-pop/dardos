@@ -28,7 +28,7 @@ function Countdown({ target }) {
     return (
       <Card className="pulse-gold border-gold/40 text-center">
         <div className="text-2xl">🎉</div>
-        <div className="mt-1 font-extrabold text-gold">PeKaeS dzisiaj do spodu</div>
+      	<div className="mt-1 font-extrabold text-gold">PeKaeS dzisiaj do spodu</div>
         <p className="mt-1 text-sm text-muted">Bawimy się do rana ooo.</p>
       </Card>
     )
@@ -51,6 +51,37 @@ function Countdown({ target }) {
         <Box v={s} l="sek" />
       </div>
     </Card>
+  )
+}
+
+/** Wyróżniony film na stronie głównej. Wybór: ustawienia (panel admina) > CLUB.featuredVideo. */
+function FeaturedVideo() {
+  const photos = store.listPhotos()
+  const settings = store.getSettings ? store.getSettings() : {}
+  const featuredId = (settings && settings.featuredVideoId) || CLUB.featuredVideo
+  const video = featuredId
+    ? photos.find((p) => p.type === 'video' && p.id === featuredId)
+    : null
+  if (!video) return null
+  return (
+    <section className="overflow-hidden rounded-3xl border border-verdant/30 bg-panel">
+      <div className="flex items-center justify-between px-4 pt-3">
+        <span className="text-xs font-black uppercase tracking-widest text-verdant">🎬 Film zjazdu</span>
+        {video.caption && <span className="truncate pl-3 text-xs text-muted">{video.caption}</span>}
+      </div>
+      <video
+        key={video.id}
+        src={video.src}
+        poster={video.poster || undefined}
+        controls
+        preload="metadata"
+        playsInline
+        className="mt-2 w-full bg-black"
+      />
+      <p className="px-4 pb-3 pt-1 text-[11px] text-muted">
+        {video.author} • {video.year}
+      </p>
+    </section>
   )
 }
 
@@ -117,6 +148,10 @@ export default function Home() {
           <div className="mt-0.5 text-xs font-bold uppercase tracking-wider text-muted">rok<br />powstania</div>
         </Card>
       </div>
+
+      {/* 🎬 FILM ZJAZDU — wyróżniony film (wybór: panel admina → Zdjęcia → „Film na start",
+          albo CLUB.featuredVideo w src/config.js) */}
+      <FeaturedVideo />
 
       {/* SEKCJE */}
       <SectionTitle title="Co tu znajdziesz?" sub="Wybierz, co Cię interesuje — wszystko działa na telefonie" />

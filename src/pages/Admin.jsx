@@ -60,11 +60,15 @@ const NEW_FOLDER = '__nowy__'
 function PhotoManager() {
   const photos = store.listPhotos()
   const folders = photoFolders(photos)
+  const settings = store.getSettings ? store.getSettings() : {}
   const [sel, setSel] = useState(() => new Set())
   const [moveTo, setMoveTo] = useState('')
   const [newFolder, setNewFolder] = useState('')     // nazwa nowego folderu (zbiorczo)
   const [inlineNew, setInlineNew] = useState(null)   // { id, name } — nowy folder przy pojedynczym zdjęciu
   const [note, setNote] = useState('')
+
+  const videos = photos.filter((p) => p.type === 'video')
+  const featuredId = settings.featuredVideoId || CLUB.featuredVideo
 
   const selectedCount = sel.size
 
@@ -154,6 +158,35 @@ function PhotoManager() {
 
   return (
     <div className="space-y-4">
+      {/* 🎬 FILM NA START (strona główna) */}
+      <Card className="border-verdant/30">
+        <SectionTitle title="🎬 Film na stronie głównej" sub="Wybierz film z galerii, który pojawi się na starcie aplikacji" />
+        {videos.length === 0 ? (
+          <p className="text-sm text-muted">Brak filmów w galerii — dodaj film (zakładka „+ Dodaj" → Film) albo wgraj skryptem importu.</p>
+        ) : (
+          <select
+            value={featuredId || ''}
+            onChange={(e) => {
+              const v = e.target.value
+              store.setSettings({ featuredVideoId: v })
+              setNote(v ? 'Ustawiono film na start.' : 'Usunięto wyróżniony film.')
+            }}
+            className="w-full rounded-2xl border border-white/10 bg-night px-3 py-2.5 text-sm outline-none focus:border-gold/60"
+          >
+            <option value="">— brak wyróżnionego filmu —</option>
+            {videos.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.caption || v.id} ({v.year || '—'})
+              </option>
+            ))}
+          </select>
+        )}
+        <p className="mt-2 text-xs text-muted">
+          Wybór zapisuje się w ustawieniach i jest wspólny dla wszystkich. Alternatywnie możesz wpisać ID filmu
+          w polu <code className="text-gold">CLUB.featuredVideo</code> w <code>src/config.js</code> (priorytet ma wybór z panelu).
+        </p>
+      </Card>
+
       <Card>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="ghost" className="w-auto px-3 py-2 text-xs" onClick={selectAll}>Zaznacz wszystkie</Button>
@@ -223,9 +256,9 @@ function PhotoManager() {
                 >
                   {sel.has(p.id) ? '✓' : ''}
                 </button>
-                <img src={p.src} alt="" className="h-20 w-20 rounded-xl object-cover" />
+                <img src={p.type === 'video' ? (p.poster || p.src) : p.src} alt="" className="h-20 w-20 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">{p.author}</p>
+                  <p className="truncate text-sm font-bold">{p.type === 'video' ? '🎬 ' : ''}{p.author}</p>
                   <p className="line-clamp-2 text-xs text-muted">{p.caption || '—'}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
                     <span className="text-muted">rok:</span>
