@@ -166,10 +166,14 @@ function PhotoManager() {
         ) : (
           <select
             value={featuredId || ''}
-            onChange={(e) => {
+            onChange={async (e) => {
               const v = e.target.value
-              store.setSettings({ featuredVideoId: v })
-              setNote(v ? 'Ustawiono film na start.' : 'Usunięto wyróżniony film.')
+              try {
+                await store.setSettings({ featuredVideoId: v })
+                setNote(v ? '✓ Ustawiono film na start.' : '✓ Usunięto wyróżniony film.')
+              } catch (err) {
+                setNote(`❌ Błąd Firebase: ${(err && err.message) || err} — zapis nie trafił do bazy. Sprawdź reguły (README → „Podłączanie Firebase", krok 6).`)
+              }
             }}
             className="w-full rounded-2xl border border-white/10 bg-night px-3 py-2.5 text-sm outline-none focus:border-gold/60"
           >
@@ -328,6 +332,19 @@ function Panel({ tab, setTab }) {
   const sentences = store.listSentences()
   const results = store.listResults()
   const game = store.getGameStatus()
+  // Komunikaty o błędach zapisu do Firebase (np. gdy reguły blokują akcję)
+  const [fbErr, setFbErr] = useState('')
+
+  /** Wykonuje akcję i pokazuje błąd, jeśli Firebase odrzuci zapis (np. permission-denied). */
+  const runAction = async (fn, okMsg) => {
+    setFbErr('')
+    try {
+      await fn()
+      setFbErr('')
+    } catch (e) {
+      setFbErr(`❌ Błąd Firebase: ${(e && e.message) || e} — zapis NIE trafił do bazy. Sprawdź reguły (README → „Podłączanie Firebase", krok 6).`)
+    }
+  }
 
   const pendingSentences = sentences.filter((s) => s.status === 'pending')
 
@@ -359,6 +376,12 @@ function Panel({ tab, setTab }) {
           Tryb: <Badge tone="green">{FEATURES.storageMode === 'firebase' ? 'Firebase' : 'lokalny (demo)'}</Badge>
         </p>
       </header>
+
+      {fbErr && (
+        <div className="rounded-2xl border border-board/40 bg-board/10 px-4 py-3 text-sm font-semibold text-red-200">
+          {fbErr}
+        </div>
+      )}
 
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
         {TABS.map(([id, label]) => (
@@ -392,9 +415,9 @@ function Panel({ tab, setTab }) {
                     <Badge tone="muted">runda {s.round || 1}</Badge>
                   </div>
                   <div className="mt-2 flex gap-2">
-                    <Button variant="green" className="w-auto px-3 py-1.5 text-xs" onClick={() => store.updateSentence(s.id, { status: 'approved' })}>Zatwierdź</Button>
-                    <Button variant="red" className="w-auto px-3 py-1.5 text-xs" onClick={() => store.updateSentence(s.id, { status: 'rejected' })}>Odrzuć</Button>
-                    <Button variant="ghost" className="w-auto px-3 py-1.5 text-xs" onClick={() => store.deleteSentence(s.id)}>Usuń</Button>
+                    <Button variant="green" className="w-auto px-3 py-1.5 text-xs" onClick={() => runAction(() => store.updateSentence(s.id, { status: 'approved' }), 'Zatwierdzono')}>Zatwierdź</Button>
+                    <Button variant="red" className="w-auto px-3 py-1.5 text-xs" onClick={() => runAction(() => store.updateSentence(s.id, { status: 'rejected' }), 'Odrzucono')}>Odrzuć</Button>
+                    <Button variant="ghost" className="w-auto px-3 py-1.5 text-xs" onClick={() => runAction(() => store.deleteSentence(s.id), 'Usunięto')}>Usuń</Button>
                   </div>
                 </Card>
               ))}
@@ -414,7 +437,7 @@ function Panel({ tab, setTab }) {
                       <span className="text-xs font-bold text-verdant">— {s.author}</span>
                       <Badge tone="muted">runda {s.round || 1}</Badge>
                     </div>
-                    <button onClick={() => store.deleteSentence(s.id)} className="text-xs font-bold text-red-300">usuń</button>
+                    <button onClick={() => runAction(() => store.deleteSentence(s.id), 'Usunięto')} className="text-xs font-bold text-red-300">usuń</button>
                   </div>
                 </Card>
               ))}
