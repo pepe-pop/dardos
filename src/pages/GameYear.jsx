@@ -13,45 +13,93 @@ function shuffle(arr) {
   return a
 }
 
-/** Ile pytań losujemy na jedną rozgrywkę. */
 const QUESTIONS_PER_GAME = 10
 
-/** Wszystkie lata z osi czasu — deduplikacja (Set), żeby opcje nigdy się nie powtarzały. */
-const ALL_YEARS = [...new Set(TIMELINE.map((t) => t.year))]
+// Ujednolicamy lata do stringa i wyciągamy unikalne wartości
+const ALL_YEARS = [...new Set(TIMELINE.map((t) => String(t.year).trim()))]
 
 /**
- * Buduje talię pytań z DUŻEJ puli (więc każda rozgrywka jest inna):
- *  - każde wydarzenie z osi czasu (title + opis),
- *  - każda ciekawostka (facts) z osi czasu jako osobne pytanie,
- *  - zdjęcia z galerii (z lat archiwalnych).
- * Z puli losujemy QUESTIONS_PER_GAME pytań.
+ * Buduje losową, zróżnicowaną talię pytań.
  */
 function buildDeck() {
   const items = []
+  
+  // Wydarzenia i ciekawostki z osi czasu
   TIMELINE.forEach((t) => {
-    // wydarzenie
-    items.push({
-      year: t.year,
-      clue: `${t.title}: ${t.text.replace(/\s+/g, ' ')}`,
-      kind: 'event',
-    })
-    // ciekawostki (facts) jako osobne pytania
+    const yr = String(t.year).trim()
+    if (t.title || t.text) {
+      items.push({
+        year: yr,
+        clue: t.text ? `${t.title}: ${t.text.replace(/\s+/g, ' ')}` : t.title,
+        kind: 'event',
+      })
+    }
     ;(t.facts || []).forEach((f) => {
-      items.push({ year: t.year, clue: `${t.title}: ${f}`, kind: 'event' })
+      items.push({ year: yr, clue: `${t.title}: ${f}`, kind: 'event' })
     })
   })
-  // zdjęcia z galerii (tylko z lat archiwalnych — nie z bieżącego roku)
-  let photos = []
+
+  // Zdjęcia z galerii
   try {
-    photos = store.listPhotos().filter((p) => p.year && p.year !== String(new Date().getFullYear())).slice(0, 8)
-  } catch { /* brak galerii — gramy samą osią czasu */ }
-  photos.forEach((p) => {
-    items.push({ year: p.year, clue: p.caption || 'Zdjęcie z archiwum klubu', kind: 'photo', src: p.src })
-  })
+    const currentYear = String(new Date().getFullYear())
+    const photos = (store.listPhotos() || [])
+      .filter((p) => p.year && String(p.year).trim() !== currentYear)
+    
+    photos.forEach((p) => {
+      items.push({
+        year: String(p.year).trim(),
+        clue: p.caption || 'Zdjęcie z archiwum klubu',
+        kind: 'photo',
+        src: p.src,
+      })
+    })
+  } catch {
+    /* fallback: gramy samą osią czasu */
+  }
+
+  // Wymieszaj całą pulę i wybierz określoną liczbę
   return shuffle(items).slice(0, QUESTIONS_PER_GAME)
 }
 
-/** Modal z PEŁNĄ treścią stwierdzenia (dla zdjęć — także z podglądem). */
+/**
+ * Generuje DOKŁADNIE 4 unikalne opcje roku dla danego pytania.
+ */
+function generateOptions(correctYear) {
+  const correct = String(correctYear).trim()
+  const yearNum = parseInt(correct, 10)
+  
+  // Baza innych lat dostępnych w historii
+  const availableOthers = shuffle(ALL_YEARS.filter((y) => y !== correct))
+  const selected = new Set([correct])
+
+  // 1. Dodawaj inne lata z bazy osi czasu
+  for (const yr of availableOthers) {
+    if (selected.size >= 4) break
+    selected.add(yr)
+  }
+
+  // 2. Bezpiecznik: jeśli w bazie jest za mało lat, wygeneruj wiarygodne lata sąsiadujące (+1, -1, +2 itd.)
+  let offset = 1
+  while (selected.size < 4) {
+    const candidates = [
+      String(yearNum - offset),
+      String(yearNum + offset),
+      String(yearNum - (offset + 2)),
+      String(yearNum + (offset + 2))
+    ]
+    for (const cand of candidates) {
+      if (selected.size >= 4) break
+      if (parseInt(cand, 10) > 1990 && !selected.has(cand)) {
+        selected.add(cand)
+      }
+    }
+    offset++
+  }
+
+  return shuffle([...selected])
+}
+
+/** Modal z PEŁNĄ treścią stwierdzenia */
 function ClueModal({ clue, onClose }) {
   if (!clue) return null
   return (
@@ -79,7 +127,6 @@ function ClueModal({ clue, onClose }) {
         )}
 
         <p className="mt-4 text-base font-bold leading-relaxed text-cream">{clue.text}</p>
-
         <p className="mt-4 text-center text-xs font-bold text-muted">Który to rok?</p>
       </div>
     </div>
@@ -99,21 +146,17 @@ export default function GameYear() {
   const [saved, setSaved] = useState(false)
   const [clueModal, setClueModal] = useState(null)
 
-  // AKTUALNE PYTANIE + OPCJE — hooki muszą być przed wczesnymi returnami!
   const q = qIdx >= 0 && qIdx < deck.length ? deck[qIdx] : null
 
-  // DOKŁADNIE 4 UNIKALNE opcje: poprawny rok + 3 losowe (bez duplikatów)
+  // Gwarancja dokładnie 4 unikalnych opcji zależnych od q.year
   const options = useMemo(() => {
     if (!q) return []
-    const othersCount = Math.min(3, Math.max(0, ALL_YEARS.length - 1))
-    const others = shuffle(ALL_YEARS.filter((y) => y !== q.year)).slice(0, othersCount)
-    return shuffle([q.year, ...others])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qIdx])
+    return generateOptions(q.year)
+  }, [q])
 
   const start = () => {
-    // NOWA GRA = NOWA, losowa talia pytań (inne pytania, nie tylko inna kolejność)
-    setDeck(buildDeck())
+    const newDeck = buildDeck()
+    setDeck(newDeck)
     setCorrect(0)
     setAnswers([])
     setPicked(null)
@@ -123,7 +166,6 @@ export default function GameYear() {
     bestFor('rok', 'high').then(setBest)
   }
 
-  // modal (fixed overlay) — renderowany w widoku pytania i w podsumowaniu
   const modalEl = clueModal && <ClueModal clue={clueModal} onClose={() => setClueModal(null)} />
 
   if (deck.length < 2) {
@@ -133,7 +175,7 @@ export default function GameYear() {
         <Card className="text-center">
           <div className="text-3xl">📅</div>
           <p className="mt-1 font-bold">Za mało materiałów do gry.</p>
-          <p className="mt-1 text-sm text-muted">Dodaj zdjęcia z lat do galerii lub uzupełnij oś czasu w src/data/timeline.js.</p>
+          <p className="mt-1 text-sm text-muted">Dodaj zdjęcia do galerii lub uzupełnij oś czasu w src/data/timeline.js.</p>
         </Card>
       </div>
     )
@@ -207,7 +249,7 @@ export default function GameYear() {
   const answer = (yr) => {
     if (picked !== null) return
     setPicked(yr)
-    const ok = yr === q.year
+    const ok = yr === String(q.year).trim()
     if (ok) setCorrect((c) => c + 1)
     setAnswers((a) => [...a, { clue: q.clue, year: q.year, picked: yr, ok, src: q.src }])
     setTimeout(() => {
@@ -229,7 +271,6 @@ export default function GameYear() {
       <Card className="rise text-center">
         <p className="text-xs font-bold uppercase tracking-widest text-gold">Z którego to roku?</p>
 
-        {/* zdjęcie — kliknięcie otwiera modal z pełnym podglądem i podpisem */}
         {q.kind === 'photo' && q.src && (
           <button
             onClick={() => setClueModal({ text: q.clue, src: q.src })}
@@ -240,7 +281,6 @@ export default function GameYear() {
           </button>
         )}
 
-        {/* stwierdzenie — kliknięcie otwiera modal z pełną treścią */}
         <button
           onClick={() => setClueModal({ text: q.clue, src: q.src })}
           className="mt-3 w-full"
@@ -253,11 +293,11 @@ export default function GameYear() {
         </button>
       </Card>
 
-      {/* DOKŁADNIE 4 opcje (poprawny rok + 3 losowe) — grid 2x2 */}
+      {/* Grid dokładnie 4 opcji (2x2) */}
       <div className="grid grid-cols-2 gap-2.5">
         {options.map((yr) => {
           const isPick = picked === yr
-          const isGood = yr === q.year
+          const isGood = yr === String(q.year).trim()
           let cls = 'border-white/10 bg-panel2 hover:border-gold/40'
           if (picked !== null) {
             if (isGood) cls = 'border-verdant bg-verdant/15 text-emerald-200'
@@ -278,9 +318,10 @@ export default function GameYear() {
           )
         })}
       </div>
+
       {picked !== null && (
         <p className="text-center text-sm font-bold text-muted">
-          {picked === q.year ? 'Dobrze! 🎯' : `To był rok ${q.year}.`}
+          {picked === String(q.year).trim() ? 'Dobrze! 🎯' : `To był rok ${q.year}.`}
         </p>
       )}
 
