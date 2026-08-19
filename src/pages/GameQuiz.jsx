@@ -4,7 +4,6 @@ import { store, recordGame } from '../lib/store.js'
 import { confettiBurst } from '../lib/confetti.js'
 import { Button, Card, BackLink, Badge } from '../components/ui.jsx'
 
-/** Ile pytań losujemy z bazy dla jednej rozgrywki. */
 const QUESTIONS_PER_GAME = 10
 
 function shuffle(arr) {
@@ -16,15 +15,14 @@ function shuffle(arr) {
   return a
 }
 
+const getRandomQuestions = () => shuffle(QUIZ).slice(0, QUESTIONS_PER_GAME)
+
 export default function GameQuiz() {
   const myName = store.getNickname()
 
-  // BAZA PYTAŃ może mieć dowolną liczbę pozycji — każdy gracz dostaje
-  // LOSOWE 10 pytań (talia budowana raz przy wejściu do gry).
-  const [bank] = useState(() => shuffle(QUIZ).slice(0, QUESTIONS_PER_GAME))
-
-  const [startedAt] = useState(() => Date.now())
-  const [i, setI] = useState(-1)            // -1 = intro, 0..n-1 pytania, n = wynik
+  const [bank, setBank] = useState(getRandomQuestions)
+  const [startedAt, setStartedAt] = useState(() => Date.now())
+  const [i, setI] = useState(-1)
   const [picked, setPicked] = useState(null)
   const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
@@ -32,7 +30,15 @@ export default function GameQuiz() {
 
   const total = bank.length
 
-  const start = () => { setI(0); setScore(0); setPicked(null); setDone(false); setIsRecord(false) }
+  const start = () => {
+    setBank(getRandomQuestions())
+    setStartedAt(Date.now())
+    setI(0)
+    setScore(0)
+    setPicked(null)
+    setDone(false)
+    setIsRecord(false)
+  }
 
   const answer = (idx) => {
     if (picked !== null) return
