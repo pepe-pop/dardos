@@ -13,26 +13,42 @@ function shuffle(arr) {
   return a
 }
 
-const YEARS_POOL = TIMELINE.map((t) => t.year)
+/** Ile pytań losujemy na jedną rozgrywkę. */
+const QUESTIONS_PER_GAME = 10
 
-/** Buduje talię pytań z wydarzeń (oś czasu) i zdjęć z galerii. Tekst stwierdzenia jest PEŁNY (nie ucinamy). */
+/** Wszystkie lata z osi czasu — deduplikacja (Set), żeby opcje nigdy się nie powtarzały. */
+const ALL_YEARS = [...new Set(TIMELINE.map((t) => t.year))]
+
+/**
+ * Buduje talię pytań z DUŻEJ puli (więc każda rozgrywka jest inna):
+ *  - każde wydarzenie z osi czasu (title + opis),
+ *  - każda ciekawostka (facts) z osi czasu jako osobne pytanie,
+ *  - zdjęcia z galerii (z lat archiwalnych).
+ * Z puli losujemy QUESTIONS_PER_GAME pytań.
+ */
 function buildDeck() {
   const items = []
   TIMELINE.forEach((t) => {
+    // wydarzenie
     items.push({
       year: t.year,
       clue: `${t.title}: ${t.text.replace(/\s+/g, ' ')}`,
       kind: 'event',
     })
+    // ciekawostki (facts) jako osobne pytania
+    ;(t.facts || []).forEach((f) => {
+      items.push({ year: t.year, clue: `${t.title}: ${f}`, kind: 'event' })
+    })
   })
-  const photos = store
-    .listPhotos()
-    .filter((p) => p.year && p.year !== String(new Date().getFullYear()))
-    .slice(0, 6)
+  // zdjęcia z galerii (tylko z lat archiwalnych — nie z bieżącego roku)
+  let photos = []
+  try {
+    photos = store.listPhotos().filter((p) => p.year && p.year !== String(new Date().getFullYear())).slice(0, 8)
+  } catch { /* brak galerii — gramy samą osią czasu */ }
   photos.forEach((p) => {
     items.push({ year: p.year, clue: p.caption || 'Zdjęcie z archiwum klubu', kind: 'photo', src: p.src })
   })
-  return shuffle(items).slice(0, 10)
+  return shuffle(items).slice(0, QUESTIONS_PER_GAME)
 }
 
 /** Modal z PEŁNĄ treścią stwierdzenia (dla zdjęć — także z podglądem). */
@@ -85,17 +101,18 @@ export default function GameYear() {
 
   // AKTUALNE PYTANIE + OPCJE — hooki muszą być przed wczesnymi returnami!
   const q = qIdx >= 0 && qIdx < deck.length ? deck[qIdx] : null
-  const options = useMemo(
-    () =>
-      q
-        ? shuffle([q.year, ...shuffle(YEARS_POOL.filter((y) => y !== q.year)).slice(0, 3)])
-        : [],
+
+  // DOKŁADNIE 4 UNIKALNE opcje: poprawny rok + 3 losowe (bez duplikatów)
+  const options = useMemo(() => {
+    if (!q) return []
+    const othersCount = Math.min(3, Math.max(0, ALL_YEARS.length - 1))
+    const others = shuffle(ALL_YEARS.filter((y) => y !== q.year)).slice(0, othersCount)
+    return shuffle([q.year, ...others])
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [qIdx]
-  )
+  }, [qIdx])
 
   const start = () => {
-    // NOWA GRA = nowa, LOSOWA talia pytań (inne stwierdzenia, nie tylko inna kolejność)
+    // NOWA GRA = NOWA, losowa talia pytań (inne pytania, nie tylko inna kolejność)
     setDeck(buildDeck())
     setCorrect(0)
     setAnswers([])
@@ -131,6 +148,7 @@ export default function GameYear() {
           <h1 className="mt-2 text-xl font-black">Zgadnij rok</h1>
           <p className="mt-2 text-sm text-muted">
             Pokażemy Ci wydarzenie lub zdjęcie z historii klubu — Ty zgadujesz, z którego to roku.
+            Każda gra losuje nowe pytania!
             {best != null && <span className="mt-1 block font-bold text-gold">Twój rekord: {best}/{deck.length}</span>}
           </p>
           <Button className="mt-4" onClick={start}>Zaczynamy!</Button>
@@ -159,7 +177,7 @@ export default function GameYear() {
           <h1 className="mt-1 text-2xl font-black">{correct} / {deck.length} poprawnych</h1>
           <p className="mt-1 text-sm text-muted">czas: {Math.floor(timeSec / 60)}:{String(timeSec % 60).padStart(2, '0')}</p>
           {isRecord && <Badge tone="green" className="mt-2">🏆 Nowy rekord!</Badge>}
-          <Button className="mt-4" onClick={start}>Zagraj ponownie</Button>
+          <Button className="mt-4" onClick={start}>NOWA GRA</Button>
         </Card>
         <Card>
           <h4 className="font-extrabold">Podsumowanie</h4>
@@ -168,7 +186,6 @@ export default function GameYear() {
               <div key={i} className={`flex items-start gap-2 rounded-xl px-3 py-2 text-xs ${a.ok ? 'bg-verdant/10' : 'bg-board/10'}`}>
                 <span>{a.ok ? '✔' : '✘'}</span>
                 <div className="min-w-0 flex-1">
-                  {/* kliknięcie w stwierdzenie → modal z pełną treścią */}
                   <button onClick={() => setClueModal({ text: a.clue, src: a.src })} className="block w-full text-left">
                     <p className="leading-snug text-cream/85 line-clamp-2">{a.clue}</p>
                     <span className="text-[10px] font-bold text-gold underline decoration-dotted underline-offset-2">
@@ -236,6 +253,7 @@ export default function GameYear() {
         </button>
       </Card>
 
+      {/* DOKŁADNIE 4 opcje (poprawny rok + 3 losowe) — grid 2x2 */}
       <div className="grid grid-cols-2 gap-2.5">
         {options.map((yr) => {
           const isPick = picked === yr
