@@ -46,7 +46,7 @@ export default function History() {
 
       {/* OŚ CZASU */}
       <section>
-        <SectionTitle title="Oś czasu" sub="2015 → 2025 (przykładowe treści — zamień na własne w src/data/timeline.js)" />
+        <SectionTitle title="Oś czasu" sub="2k16 -> 2k26" />
         <div className="relative space-y-4 pl-6">
           <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-gold via-verdant to-board" />
           {TIMELINE.map((y) => (
@@ -82,7 +82,7 @@ export default function History() {
 
       {/* CYTATY */}
       <section>
-        <SectionTitle title="Słowami członków" sub="Przykładowe cytaty — zastąp prawdziwymi" />
+        <SectionTitle title="Słowami członków i sympatyków" sub="Jak coś jeszcze macie to priv" />
         <div className="space-y-3">
           {QUOTES.map((q, i) => (
             <Card key={i} className="border-l-4 border-l-gold">
