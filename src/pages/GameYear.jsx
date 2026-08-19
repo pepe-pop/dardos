@@ -72,7 +72,7 @@ function ClueModal({ clue, onClose }) {
 
 export default function GameYear() {
   const myName = store.getNickname()
-  const [deck] = useState(() => buildDeck())
+  const [deck, setDeck] = useState(() => buildDeck())
   const [qIdx, setQIdx] = useState(-1)
   const [picked, setPicked] = useState(null)
   const [correct, setCorrect] = useState(0)
@@ -95,6 +95,8 @@ export default function GameYear() {
   )
 
   const start = () => {
+    // NOWA GRA = nowa, LOSOWA talia pytań (inne stwierdzenia, nie tylko inna kolejność)
+    setDeck(buildDeck())
     setCorrect(0)
     setAnswers([])
     setPicked(null)
