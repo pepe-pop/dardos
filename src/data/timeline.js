@@ -42,19 +42,19 @@ export const TIMELINE = [
   {
     year: 2020,
     title: "Covid",
-    text: "Ciężki czas pandemii nie wpłynął negatywnie na relacje",
+    text: "Ciężki czas pandemii nie wpłynął negatywnie na relacje między członkami klubu. Zachowując wszelkie środki bezpieczeństwa spotykano się po kryjomu na rozgrywanie meczów darta w lokalach w Warszawie. W 2020 pojawiły się pierwsze PeKaeSowe koszulki. Ponadto udało się zorganizować niezapomniany wyjazd na Mazury",
     facts: [
       "Obcinanie włosów maszynką za 50 zł",
-      "wyjazd na mazury",
-      "Wiktor w Grecji"
+      "Wyjazd na Mazury",
+      "Piersze zaprezentowanie koszulek PeKaeS za granicą (Wiktor na wakacjach w Grecji)"
     ]
   },
   {
     year: 2021,
     title: "Covid v2",
-    text: "Pandemia nie odpuszczała - tak jak i my. Na święta bożonarodzeniowe powstała kolejna fotka.",
+    text: "Pandemia nie odpuszczała - tak jak i my. Na święta bożonarodzeniowe zostaliśmy nawiedzeni przez nieproszonych gości, którzy również chcieli pograć z nami w darta - jednak byli na służbie. Obyło się bez mandatu",
     facts: [
-      "Policja w pekaesie",
+      "Policja w PeKaeSie",
       "Konfitura w klatce u Kuby"
     ]
   },
@@ -64,7 +64,7 @@ export const TIMELINE = [
     text: "Czas integracji i niezapomnianych spotkań klubowych w wyjątkowych okolicznościach.",
     facts: [
       "Pierwszy wyjazd na wspaniałe ranczo u Henia",
-      "Jolka Jolka & byłam różą od rana do nocy",
+      "Jolka Jolka & Byłam Eóżą od rana do nocy",
       "SOR i złamana noga"
     ],
     quote: "2022 wspaniałe ranczo u Henia"
@@ -82,10 +82,10 @@ export const TIMELINE = [
   {
     year: 2024,
     title: "Wyjazd do Gliwic",
-    text: "Wyjazd ekipą na Poland Darts Masters, który odbył się w Gliwicach",
+    text: "Wyjazd ekipą na Poland Dart Masters, który odbył się w Gliwicach. Kapson pięknie nas ugościł na Śląsku, pokazując dlaczego kocha to miejsce.",
     facts: [
       "Dart w Gliwicach",
-      "Poznanie całej aglomeracji śląskiej dzięki zatłoczonemu autobusowi z Kato do Gliwic"
+      "Ponznanie całej aglomeracji śląskiej dzięki zatłoczonemu autobusowi z Kato do Gliwic"
     ]
   },
   {
