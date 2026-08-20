@@ -259,12 +259,16 @@ export const MEMORY_SYMBOLS = ['🎯', '🏆', '🥇', '🍻', '🃏', '🍕']
  * Jeśli tablica jest pusta, gra używa emoji z MEMORY_SYMBOLS.
  */
 export const MEMORY_IMAGES = [
-  // { src: './memory/01.jpg', label: 'Założyciele klubu' },
-  // { src: './memory/02.jpg', label: 'Pierwszy puchar' },
-  // { src: './memory/03.jpg', label: 'Tarcza 2015' },
-  // { src: './memory/04.jpg', label: 'Logo klubu' },
-  // { src: './memory/05.jpg', label: 'Wyjazd integracyjny' },
-  // { src: './memory/06.jpg', label: 'Zjazd 10-lecia' },
+   { src: './memory/ananas.jpg', label: 'Partner z Warszawy' },
+   { src: './memory/dart_zamosc.jpg', label: 'Drugi klub zamojski' },
+   { src: './memory/guinness.jpg', label: 'guinness' },
+   { src: './memory/logo.jpg', label: 'Logo klubu' },
+   { src: './memory/pekaessa.jpg', label: 'logo pekaessa' },
+   { src: './memory/pks_black.jpg', label: 'LOGO KLUBU CZARNE' },
+  { src: './memory/promodart.jpg', label: 'Drugi klub z warszawy' },
+  { src: './memory/sapko.jpg', label: 'pyszny kebab' }
+
+
 ]
 
 /** Bingo klubowe — pula haseł (karta losuje 24 z nich + środek FREE). */
